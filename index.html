@@ -1,0 +1,2331 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IP词库配置动态原型</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --surface: #ffffff;
+        --line: #dbe2ee;
+        --line-strong: #c8d2e2;
+        --text: #111827;
+        --muted: #667085;
+        --soft: #f8fafc;
+        --blue: #1a73e8;
+        --blue-soft: #eaf2ff;
+        --green: #16a34a;
+        --green-soft: #e8f8ef;
+        --red: #dc2626;
+        --red-soft: #fff0f0;
+        --amber: #d97706;
+        --amber-soft: #fff7e6;
+        --purple: #7c3aed;
+        --purple-soft: #f3edff;
+        --shadow: 0 14px 34px rgba(16, 24, 40, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 1180px;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Microsoft YaHei", sans-serif;
+        font-size: 14px;
+      }
+
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+
+      .page {
+        min-height: 100vh;
+      }
+
+      .topbar {
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 0 28px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .title-wrap {
+        display: flex;
+        align-items: baseline;
+        gap: 18px;
+      }
+
+      .title-wrap h1 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.2;
+        font-weight: 750;
+      }
+
+      .breadcrumb {
+        color: var(--muted);
+      }
+
+      .primary-btn,
+      .secondary-btn,
+      .ghost-btn,
+      .danger-btn {
+        height: 36px;
+        border-radius: 6px;
+        padding: 0 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .primary-btn {
+        color: #fff;
+        background: var(--blue);
+        box-shadow: 0 6px 14px rgba(26, 115, 232, 0.2);
+      }
+
+      .secondary-btn {
+        color: var(--blue);
+        background: #fff;
+        border-color: #9dc0fb;
+      }
+
+      .ghost-btn {
+        color: var(--muted);
+        background: transparent;
+        border-color: var(--line);
+      }
+
+      .danger-btn {
+        color: var(--red);
+        background: #fff;
+        border-color: #fecaca;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 308px 1fr;
+        min-height: calc(100vh - 72px);
+      }
+
+      .sidebar {
+        background: #fbfcff;
+        border-right: 1px solid var(--line);
+        padding: 24px 20px;
+      }
+
+      .sidebar h2,
+      .panel-title {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.2;
+        font-weight: 700;
+      }
+
+      .search-box {
+        margin: 18px 0;
+        position: relative;
+      }
+
+      .search-box input {
+        width: 100%;
+        height: 42px;
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        padding: 0 12px 0 36px;
+        background: #fff;
+        outline: none;
+      }
+
+      .search-box::before {
+        content: "";
+        position: absolute;
+        left: 13px;
+        top: 13px;
+        width: 12px;
+        height: 12px;
+        border: 2px solid #98a2b3;
+        border-radius: 50%;
+      }
+
+      .search-box::after {
+        content: "";
+        position: absolute;
+        left: 25px;
+        top: 26px;
+        width: 7px;
+        height: 2px;
+        background: #98a2b3;
+        transform: rotate(45deg);
+      }
+
+      .ip-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .ip-item {
+        width: 100%;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: 48px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .ip-item.active {
+        border-color: var(--blue);
+        background: var(--blue-soft);
+      }
+
+      .ip-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: 800;
+        font-size: 18px;
+        background: #175cd3;
+      }
+
+      .ip-logo.purple {
+        background: var(--purple);
+      }
+
+      .ip-logo.dark {
+        background: #344054;
+      }
+
+      .ip-name {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 5px;
+      }
+
+      .ip-id,
+      .ip-region-small {
+        color: var(--muted);
+      }
+
+      .ip-meta {
+        display: grid;
+        justify-items: end;
+        gap: 6px;
+      }
+
+      .content {
+        padding: 18px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+      }
+
+      .panel.pad {
+        padding: 20px;
+      }
+
+      .basic-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .field-grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .field {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 12px;
+        align-items: center;
+        min-height: 36px;
+      }
+
+      .label {
+        color: #344054;
+        font-weight: 650;
+      }
+
+      .value {
+        color: var(--text);
+      }
+
+      .hint {
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      select {
+        width: 100%;
+        height: 38px;
+        border-radius: 6px;
+        border: 1px solid var(--line-strong);
+        padding: 0 12px;
+        background: #fff;
+        color: var(--text);
+      }
+
+      .form-input,
+      .form-textarea {
+        width: 100%;
+        border-radius: 6px;
+        border: 1px solid var(--line-strong);
+        background: #fff;
+        color: var(--text);
+        outline: none;
+      }
+
+      .form-input {
+        height: 38px;
+        padding: 0 12px;
+      }
+
+      .form-textarea {
+        min-height: 82px;
+        padding: 10px 12px;
+        line-height: 1.5;
+        resize: vertical;
+      }
+
+      .switch-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .switch {
+        width: 50px;
+        height: 28px;
+        border: 0;
+        border-radius: 999px;
+        padding: 3px;
+        background: #cbd5e1;
+        cursor: pointer;
+        transition: background 0.18s ease;
+      }
+
+      .switch span {
+        display: block;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        background: #fff;
+        box-shadow: 0 2px 7px rgba(0, 0, 0, 0.2);
+        transition: transform 0.18s ease;
+      }
+
+      .switch.on {
+        background: var(--blue);
+      }
+
+      .switch.on span {
+        transform: translateX(22px);
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: minmax(420px, 0.9fr) minmax(560px, 1.1fr);
+        gap: 18px;
+      }
+
+      .panel-head {
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .table-wrap {
+        padding: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        height: 46px;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--line);
+        border-right: 1px solid var(--line);
+        text-align: left;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      th:last-child,
+      td:last-child {
+        border-right: 0;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      th {
+        color: #475467;
+        background: var(--soft);
+        font-weight: 700;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 24px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .chip.green {
+        color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .chip.gray {
+        color: #475467;
+        background: #eef2f7;
+      }
+
+      .chip.red {
+        color: var(--red);
+        background: var(--red-soft);
+      }
+
+      .chip.amber {
+        color: var(--amber);
+        background: var(--amber-soft);
+      }
+
+      .chip.blue {
+        color: var(--blue);
+        background: var(--blue-soft);
+      }
+
+      .tabs {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+      }
+
+      .tab {
+        min-width: 74px;
+        height: 34px;
+        padding: 0 12px;
+        border: 0;
+        border-right: 1px solid var(--line);
+        color: #475467;
+        background: #fff;
+        cursor: pointer;
+      }
+
+      .tab:last-child {
+        border-right: 0;
+      }
+
+      .tab.active {
+        color: var(--blue);
+        background: var(--blue-soft);
+        font-weight: 750;
+      }
+
+      .relationship {
+        padding: 18px;
+      }
+
+      .relationship-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .status-line {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: 230px 48px 230px 48px 1fr;
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .flow-box {
+        min-height: 188px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px;
+      }
+
+      .flow-title {
+        color: var(--blue);
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 12px;
+      }
+
+      .arrow {
+        display: grid;
+        place-items: center;
+        color: #8a94a6;
+        font-size: 34px;
+        font-weight: 300;
+      }
+
+      .term-stack,
+      .pill-stack {
+        display: grid;
+        gap: 9px;
+      }
+
+      .term-pill,
+      .content-pill {
+        min-height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--soft);
+        color: var(--text);
+        text-align: center;
+      }
+
+      .content-pill.off {
+        color: #98a2b3;
+        background: #f6f7f9;
+        border-style: dashed;
+      }
+
+      .ip-center {
+        display: grid;
+        place-items: center;
+        align-content: center;
+        gap: 12px;
+        text-align: center;
+      }
+
+      .module-preview {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(128px, 1fr));
+        gap: 10px;
+      }
+
+      .module-tab {
+        min-height: 142px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        padding: 10px;
+        background: #fff;
+      }
+
+      .module-tab.active-preview {
+        border-color: var(--blue);
+        background: #f4f8ff;
+      }
+
+      .module-tab h4 {
+        margin: 0 0 10px;
+        text-align: center;
+        font-size: 14px;
+        color: #344054;
+      }
+
+      .module-off {
+        opacity: 0.48;
+      }
+
+      .empty {
+        min-height: 82px;
+        display: grid;
+        place-items: center;
+        color: #98a2b3;
+        border: 1px dashed var(--line-strong);
+        border-radius: 6px;
+        background: #fafbfc;
+      }
+
+      .notice {
+        margin-top: 14px;
+        padding: 10px 12px;
+        color: #475467;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        line-height: 1.6;
+      }
+
+      .drawer-mask {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: none;
+        background: rgba(15, 23, 42, 0.38);
+      }
+
+      .drawer-mask.open {
+        display: block;
+      }
+
+      .drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(980px, calc(100vw - 88px));
+        height: 100%;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        background: var(--surface);
+        box-shadow: -18px 0 42px rgba(16, 24, 40, 0.18);
+      }
+
+      .drawer.narrow {
+        width: min(620px, calc(100vw - 88px));
+      }
+
+      .drawer-header,
+      .drawer-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .drawer-footer {
+        justify-content: flex-end;
+        border-top: 1px solid var(--line);
+        border-bottom: 0;
+      }
+
+      .drawer-title h2 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      .drawer-title p {
+        margin: 7px 0 0;
+        color: var(--muted);
+      }
+
+      .drawer-body {
+        padding: 18px 24px 24px;
+        overflow: auto;
+        background: #f8fafc;
+      }
+
+      .form-section {
+        margin-bottom: 16px;
+        padding: 18px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .form-section-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .form-section-head h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .form-section-head p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 18px;
+      }
+
+      .form-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .form-item {
+        display: grid;
+        gap: 8px;
+      }
+
+      .form-item.full {
+        grid-column: 1 / -1;
+      }
+
+      .form-label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #344054;
+        font-weight: 700;
+      }
+
+      .required {
+        color: var(--red);
+      }
+
+      .inline-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .mini-table {
+        display: grid;
+        gap: 10px;
+      }
+
+      .mini-row,
+      .mini-head {
+        display: grid;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .term-editor .mini-row,
+      .term-editor .mini-head {
+        grid-template-columns: 1fr 0.7fr 36px;
+      }
+
+      .content-editor .mini-row,
+      .content-editor .mini-head {
+        grid-template-columns: 1.4fr 0.9fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 36px;
+      }
+
+      .mini-head {
+        color: #475467;
+        font-weight: 700;
+        padding: 0 4px;
+      }
+
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .create-preview {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+
+      .preview-card {
+        min-height: 112px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcff;
+      }
+
+      .preview-card h4 {
+        margin: 0 0 10px;
+        color: #344054;
+      }
+
+      .preview-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .readonly-box {
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #f8fafc;
+        color: #344054;
+        font-weight: 650;
+      }
+
+      @media (max-width: 1260px) {
+        body {
+          min-width: 1060px;
+        }
+
+        .flow {
+          grid-template-columns: 200px 36px 200px 36px 1fr;
+        }
+
+        .module-preview {
+          grid-template-columns: repeat(3, minmax(128px, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div class="title-wrap">
+          <h1>IP词库配置</h1>
+          <div class="breadcrumb">搜索词 -> IP -> 内容 -> 模块分类Tab</div>
+        </div>
+        <button class="primary-btn" type="button" id="newIpBtn">+ 新建IP</button>
+      </header>
+
+      <section class="layout">
+        <aside class="sidebar">
+          <h2>IP列表</h2>
+          <div class="search-box">
+            <input id="ipSearch" type="search" placeholder="搜索IP名称/ID" />
+          </div>
+          <div class="ip-list" id="ipList"></div>
+        </aside>
+
+        <section class="content">
+          <section class="panel pad">
+            <div class="relationship-head">
+              <h2 class="panel-title">IP基础配置</h2>
+              <button class="ghost-btn" type="button" id="resetBtn">恢复示例数据</button>
+            </div>
+            <div class="basic-grid">
+              <div class="field-grid">
+                <div class="field">
+                  <div class="label">IP名称:</div>
+                  <div class="value" id="basicName"></div>
+                </div>
+                <div class="field">
+                  <div class="label">IP类型:</div>
+                  <div class="value" id="basicType"></div>
+                </div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field">
+                  <div class="label">模块状态:</div>
+                  <div class="switch-row">
+                    <button class="switch" type="button" id="moduleSwitch" aria-label="切换模块状态">
+                      <span></span>
+                    </button>
+                    <span id="moduleStatusText"></span>
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="label">默认首推内容:</div>
+                  <div class="value" id="defaultContent"></div>
+                </div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field">
+                  <div class="label">地区展示:</div>
+                  <div>
+                    <select id="regionSelect" aria-label="地区展示">
+                      <option value="全部地区">全部地区</option>
+                      <option value="巴西">巴西</option>
+                      <option value="墨西哥">墨西哥</option>
+                      <option value="巴西, 墨西哥">巴西, 墨西哥</option>
+                      <option value="印尼">印尼</option>
+                      <option value="美国">美国</option>
+                    </select>
+                    <div class="hint">默认全部展示；选择具体地区后仅在对应地区生效。</div>
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="label">最近更新:</div>
+                  <div class="value" id="updateInfo"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="two-col">
+            <section class="panel">
+              <div class="panel-head">
+                <h2 class="panel-title">搜索词映射</h2>
+                <button class="secondary-btn" type="button" id="addTermBtn">+ 添加搜索词</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>搜索词</th>
+                      <th>映射IP</th>
+                      <th>状态</th>
+                    </tr>
+                  </thead>
+                  <tbody id="termRows"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2 class="panel-title">IP模块内容</h2>
+                <button class="secondary-btn" type="button" id="addContentBtn">+ 绑定内容</button>
+              </div>
+              <div class="table-wrap">
+                <div class="tabs" id="contentTabs"></div>
+                <div style="height: 12px"></div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>内容名称</th>
+                      <th>内容ID</th>
+                      <th>类型</th>
+                      <th>展示Tab</th>
+                      <th>季/年份</th>
+                      <th>排序</th>
+                      <th>模块展示</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contentRows"></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel relationship">
+            <div class="relationship-head">
+              <h2 class="panel-title">配置关系预览</h2>
+              <div class="status-line" id="previewStatus"></div>
+            </div>
+            <div class="flow" id="flowPreview"></div>
+            <div class="notice" id="ruleNote"></div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <section class="drawer-mask" id="createDrawer" aria-hidden="true">
+      <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="createTitle">
+        <header class="drawer-header">
+          <div class="drawer-title">
+            <h2 id="createTitle">新建IP配置</h2>
+            <p>用于配置搜索词命中后映射到哪个IP，以及该IP模块里展示哪些内容和分类Tab。</p>
+          </div>
+          <button class="ghost-btn" type="button" id="closeCreateBtn">关闭</button>
+        </header>
+
+        <div class="drawer-body">
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>1. IP基础信息</h3>
+                <p>定义一个可被搜索词映射的IP实体，内容元数据仍从内容库读取。</p>
+              </div>
+              <span class="chip blue">必填</span>
+            </div>
+            <div class="form-grid">
+              <label class="form-item">
+                <span class="form-label">IP名称 <span class="required">*</span></span>
+                <input class="form-input" id="createIpName" value="银河旅人" placeholder="如：星际侠" />
+                <span class="hint">前台模块标题和后台列表主名称。</span>
+              </label>
+
+              <label class="form-item">
+                <span class="form-label">IP类型 <span class="required">*</span></span>
+                <select id="createIpType">
+                  <option value="影视IP">影视IP</option>
+                  <option value="角色IP">角色IP</option>
+                  <option value="人物IP">人物IP</option>
+                </select>
+              </label>
+
+              <label class="form-item">
+                <span class="form-label">IP ID</span>
+                <input class="form-input" id="createIpId" value="系统自动生成" disabled />
+                <span class="hint">保存后由后台生成，示例中自动补一个临时ID。</span>
+              </label>
+
+              <label class="form-item full">
+                <span class="form-label">IP简介</span>
+                <textarea class="form-textarea" id="createIntro" placeholder="用于搜索结果页IP简介区域，可为空。">银河旅人是一组围绕同名科幻影视IP聚合的电影、电视剧和动画内容。</textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>2. 展示控制</h3>
+                <p>控制该IP模块是否生效、在哪些地区展示，以及首推内容的默认策略。</p>
+              </div>
+              <span class="chip blue">上线控制</span>
+            </div>
+            <div class="form-grid three">
+              <div class="form-item">
+                <span class="form-label">模块状态 <span class="required">*</span></span>
+                <div class="inline-controls">
+                  <button class="switch on" type="button" id="createEnableSwitch" aria-label="新建IP模块状态">
+                    <span></span>
+                  </button>
+                  <span id="createEnableText" class="chip green">启用</span>
+                </div>
+              </div>
+
+              <label class="form-item">
+                <span class="form-label">地区展示 <span class="required">*</span></span>
+                <select id="createRegion">
+                  <option value="全部地区">全部地区</option>
+                  <option value="巴西">巴西</option>
+                  <option value="墨西哥">墨西哥</option>
+                  <option value="巴西, 墨西哥">巴西, 墨西哥</option>
+                  <option value="印尼">印尼</option>
+                  <option value="美国">美国</option>
+                </select>
+                <span class="hint">默认全部展示。</span>
+              </label>
+
+              <label class="form-item">
+                <span class="form-label">默认首推内容</span>
+                <input class="form-input" id="createDefaultContentSearch" placeholder="输入内容名称 / 内容ID 搜索" />
+                <select id="createDefaultContentSelect"></select>
+                <span class="hint">支持按内容名称或内容ID模糊搜索；为空时按近24小时启播最多内容兜底。</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>3. 搜索词映射</h3>
+                <p>配置哪些搜索词会命中当前IP。一个IP可绑定多个搜索词。</p>
+              </div>
+              <button class="secondary-btn" type="button" id="createAddTermBtn">+ 添加搜索词</button>
+            </div>
+            <div class="mini-table term-editor">
+              <div class="mini-head">
+                <div>搜索词 *</div>
+                <div>状态</div>
+                <div></div>
+              </div>
+              <div id="createTermRows"></div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>4. 绑定内容与模块分类Tab</h3>
+                <p>配置IP模块中展示的内容，以及每条内容属于哪个分类Tab。</p>
+              </div>
+              <button class="secondary-btn" type="button" id="createAddContentBtn">+ 绑定内容</button>
+            </div>
+            <div class="mini-table content-editor">
+              <div class="mini-head">
+                <div>内容名称 *</div>
+                <div>内容ID</div>
+                <div>类型 *</div>
+                <div>展示Tab *</div>
+                <div>季/年份</div>
+                <div>排序</div>
+                <div>模块展示</div>
+                <div></div>
+              </div>
+              <div id="createContentRows"></div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>5. 新建配置预览</h3>
+                <p>保存后，搜索词会先映射到IP，再由IP聚合模块展示绑定内容。</p>
+              </div>
+              <button class="ghost-btn" type="button" id="refreshCreatePreviewBtn">刷新预览</button>
+            </div>
+            <div class="create-preview" id="createPreview"></div>
+          </section>
+        </div>
+
+        <footer class="drawer-footer">
+          <button class="ghost-btn" type="button" id="cancelCreateBtn">取消</button>
+          <button class="secondary-btn" type="button" id="previewCreateBtn">预览关系</button>
+          <button class="primary-btn" type="button" id="saveCreateBtn">保存草稿</button>
+        </footer>
+      </div>
+    </section>
+
+    <section class="drawer-mask" id="termDrawer" aria-hidden="true">
+      <div class="drawer narrow" role="dialog" aria-modal="true" aria-labelledby="termTitle">
+        <header class="drawer-header">
+          <div class="drawer-title">
+            <h2 id="termTitle">添加搜索词</h2>
+            <p>配置用户输入哪些词时，可以命中当前IP。</p>
+          </div>
+          <button class="ghost-btn" type="button" id="closeTermBtn">关闭</button>
+        </header>
+
+        <div class="drawer-body">
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>搜索词基础配置</h3>
+                <p>保存后，该搜索词会映射到当前IP，并参与搜索结果页IP模块触发判断。</p>
+              </div>
+              <span class="chip blue">当前IP</span>
+            </div>
+            <div class="form-grid">
+              <div class="form-item">
+                <span class="form-label">映射IP</span>
+                <div class="readonly-box" id="termIpReadonly"></div>
+              </div>
+
+              <label class="form-item">
+                <span class="form-label">搜索词 <span class="required">*</span></span>
+                <input class="form-input" id="termKeyword" placeholder="如：星际侠系列 / 雷恩队长" />
+                <span class="hint">建议同一IP下搜索词不重复；跨IP重名词需要运营确认优先级。</span>
+              </label>
+
+              <div class="form-item">
+                <span class="form-label">搜索词状态</span>
+                <div class="inline-controls">
+                  <button class="switch on" type="button" id="termEnableSwitch" aria-label="搜索词状态">
+                    <span></span>
+                  </button>
+                  <span id="termEnableText" class="chip green">启用</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>触发关系预览</h3>
+                <p>该搜索词保存后，会出现在当前IP的搜索词映射表中。</p>
+              </div>
+              <button class="ghost-btn" type="button" id="termPreviewBtn">刷新预览</button>
+            </div>
+            <div class="create-preview" id="termPreview"></div>
+          </section>
+        </div>
+
+        <footer class="drawer-footer">
+          <button class="ghost-btn" type="button" id="cancelTermBtn">取消</button>
+          <button class="primary-btn" type="button" id="saveTermBtn">保存搜索词</button>
+        </footer>
+      </div>
+    </section>
+
+    <section class="drawer-mask" id="contentDrawer" aria-hidden="true">
+      <div class="drawer narrow" role="dialog" aria-modal="true" aria-labelledby="contentTitle">
+        <header class="drawer-header">
+          <div class="drawer-title">
+            <h2 id="contentTitle">绑定内容</h2>
+            <p>配置当前IP模块中展示哪些影视内容，以及内容所在分类Tab。</p>
+          </div>
+          <button class="ghost-btn" type="button" id="closeContentBtn">关闭</button>
+        </header>
+
+        <div class="drawer-body">
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>内容绑定配置</h3>
+                <p>内容基础信息建议从内容库检索选择；此处原型用手动填写表达字段。</p>
+              </div>
+              <span class="chip blue">当前IP</span>
+            </div>
+            <div class="form-grid">
+              <div class="form-item">
+                <span class="form-label">绑定IP</span>
+                <div class="readonly-box" id="contentIpReadonly"></div>
+              </div>
+
+              <label class="form-item">
+                <span class="form-label">内容名称 <span class="required">*</span></span>
+                <input class="form-input" id="bindContentName" placeholder="如：星际侠 第3季" />
+              </label>
+
+              <label class="form-item">
+                <span class="form-label">内容ID <span class="required">*</span></span>
+                <input class="form-input" id="bindContentId" placeholder="如：C20022" />
+                <span class="hint">正式后台建议通过内容库搜索选择，避免手输错误。</span>
+              </label>
+
+              <label class="form-item">
+                <span class="form-label">内容类型 <span class="required">*</span></span>
+                <select id="bindContentType">
+                  <option value="电视剧">电视剧</option>
+                  <option value="电影">电影</option>
+                  <option value="动漫">动漫</option>
+                  <option value="短剧">短剧</option>
+                </select>
+              </label>
+
+              <label class="form-item">
+                <span class="form-label">展示Tab <span class="required">*</span></span>
+                <select id="bindContentTab">
+                  <option value="tv">电视剧</option>
+                  <option value="movie">电影</option>
+                  <option value="anime">动漫</option>
+                  <option value="short">短剧</option>
+                </select>
+                <span class="hint">决定该内容出现在IP模块哪个分类Tab下。</span>
+              </label>
+
+              <label class="form-item">
+                <span class="form-label">季/年份</span>
+                <input class="form-input" id="bindContentSeason" placeholder="如：第3季 / 2026" />
+              </label>
+
+              <label class="form-item">
+                <span class="form-label">模块排序</span>
+                <input class="form-input" id="bindContentOrder" placeholder="如：6 / 默认首推" />
+                <span class="hint">不填时追加到当前列表末尾。</span>
+              </label>
+
+              <div class="form-item">
+                <span class="form-label">模块展示</span>
+                <div class="inline-controls">
+                  <button class="switch on" type="button" id="contentVisibleSwitch" aria-label="模块展示">
+                    <span></span>
+                  </button>
+                  <span id="contentVisibleText" class="chip green">开</span>
+                </div>
+              </div>
+
+              <div class="form-item">
+                <span class="form-label">设为默认首推</span>
+                <div class="inline-controls">
+                  <button class="switch" type="button" id="contentDefaultSwitch" aria-label="设为默认首推">
+                    <span></span>
+                  </button>
+                  <span id="contentDefaultText" class="chip gray">否</span>
+                </div>
+              </div>
+
+              <label class="form-item">
+                <span class="form-label">地区规则</span>
+                <select id="bindContentRegion">
+                  <option value="跟随IP地区">跟随IP地区</option>
+                  <option value="全部地区">全部地区</option>
+                  <option value="巴西">巴西</option>
+                  <option value="墨西哥">墨西哥</option>
+                  <option value="巴西, 墨西哥">巴西, 墨西哥</option>
+                  <option value="印尼">印尼</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>绑定关系预览</h3>
+                <p>保存后，该内容会出现在当前IP模块对应分类Tab内。</p>
+              </div>
+              <button class="ghost-btn" type="button" id="contentPreviewBtn">刷新预览</button>
+            </div>
+            <div class="create-preview" id="contentPreview"></div>
+          </section>
+        </div>
+
+        <footer class="drawer-footer">
+          <button class="ghost-btn" type="button" id="cancelContentBtn">取消</button>
+          <button class="primary-btn" type="button" id="saveContentBtn">保存绑定</button>
+        </footer>
+      </div>
+    </section>
+
+    <script>
+      const initialIpList = [
+        {
+          id: "IP10001",
+          name: "星际侠",
+          logo: "星",
+          logoTone: "blue",
+          type: "影视IP",
+          enabled: true,
+          regions: "全部地区",
+          defaultContent: "星际侠 第2季",
+          updatedBy: "运营A",
+          updatedAt: "2026-07-05",
+          terms: [
+            { word: "星际侠", enabled: true },
+            { word: "星级侠", enabled: true },
+            { word: "星际侠系列", enabled: true },
+            { word: "雷恩队长", enabled: true },
+            { word: "艾拉·陈", enabled: true },
+          ],
+          contents: [
+            {
+              name: "星际侠 第2季",
+              id: "C20021",
+              type: "电视剧",
+              tab: "tv",
+              season: "第2季",
+              order: "默认首推",
+              visible: true,
+            },
+            {
+              name: "星际侠 第1季",
+              id: "C20020",
+              type: "电视剧",
+              tab: "tv",
+              season: "第1季",
+              order: "2",
+              visible: true,
+            },
+            {
+              name: "星际侠: 起源",
+              id: "C10011",
+              type: "电影",
+              tab: "movie",
+              season: "2024",
+              order: "3",
+              visible: true,
+            },
+            {
+              name: "星际侠 动画版",
+              id: "C30008",
+              type: "动漫",
+              tab: "anime",
+              season: "2025",
+              order: "4",
+              visible: true,
+            },
+            {
+              name: "星际侠短剧番外",
+              id: "C40003",
+              type: "短剧",
+              tab: "short",
+              season: "2026",
+              order: "5",
+              visible: false,
+            },
+          ],
+        },
+        {
+          id: "IP10002",
+          name: "魔法学院",
+          logo: "魔",
+          logoTone: "purple",
+          type: "影视IP",
+          enabled: true,
+          regions: "巴西, 墨西哥",
+          defaultContent: "魔法学院 第3季",
+          updatedBy: "运营B",
+          updatedAt: "2026-07-03",
+          terms: [
+            { word: "魔法学院", enabled: true },
+            { word: "魔院", enabled: true },
+            { word: "魔法学院系列", enabled: true },
+            { word: "莉娅老师", enabled: true },
+          ],
+          contents: [
+            {
+              name: "魔法学院 第3季",
+              id: "C21033",
+              type: "电视剧",
+              tab: "tv",
+              season: "第3季",
+              order: "默认首推",
+              visible: true,
+            },
+            {
+              name: "魔法学院 第2季",
+              id: "C21032",
+              type: "电视剧",
+              tab: "tv",
+              season: "第2季",
+              order: "2",
+              visible: true,
+            },
+            {
+              name: "魔法学院大电影",
+              id: "C11001",
+              type: "电影",
+              tab: "movie",
+              season: "2025",
+              order: "3",
+              visible: true,
+            },
+            {
+              name: "魔法学院动画课",
+              id: "C31007",
+              type: "动漫",
+              tab: "anime",
+              season: "2024",
+              order: "4",
+              visible: true,
+            },
+          ],
+        },
+        {
+          id: "IP10003",
+          name: "暗夜侦探",
+          logo: "侦",
+          logoTone: "dark",
+          type: "影视IP",
+          enabled: false,
+          regions: "全部地区",
+          defaultContent: "暗夜侦探 电影版",
+          updatedBy: "运营C",
+          updatedAt: "2026-06-28",
+          terms: [
+            { word: "暗夜侦探", enabled: true },
+            { word: "夜探", enabled: true },
+            { word: "罗伊侦探", enabled: false },
+          ],
+          contents: [
+            {
+              name: "暗夜侦探 电影版",
+              id: "C12009",
+              type: "电影",
+              tab: "movie",
+              season: "2023",
+              order: "默认首推",
+              visible: true,
+            },
+            {
+              name: "暗夜侦探 第1季",
+              id: "C22001",
+              type: "电视剧",
+              tab: "tv",
+              season: "第1季",
+              order: "2",
+              visible: true,
+            },
+          ],
+        },
+      ];
+
+      const tabMap = [
+        { key: "all", label: "全部" },
+        { key: "movie", label: "电影" },
+        { key: "tv", label: "电视剧" },
+        { key: "anime", label: "动漫" },
+        { key: "short", label: "短剧" },
+      ];
+
+      let ipList = JSON.parse(JSON.stringify(initialIpList));
+      let selectedIpId = ipList[0].id;
+      let activeTab = "all";
+      let createEnabled = true;
+      let createDefaultContentId = "";
+      let createTermDrafts = [];
+      let createContentDrafts = [];
+      let termEnabled = true;
+      let contentVisible = true;
+      let contentAsDefault = false;
+
+      const els = {
+        ipList: document.getElementById("ipList"),
+        ipSearch: document.getElementById("ipSearch"),
+        basicName: document.getElementById("basicName"),
+        basicType: document.getElementById("basicType"),
+        moduleSwitch: document.getElementById("moduleSwitch"),
+        moduleStatusText: document.getElementById("moduleStatusText"),
+        defaultContent: document.getElementById("defaultContent"),
+        regionSelect: document.getElementById("regionSelect"),
+        updateInfo: document.getElementById("updateInfo"),
+        termRows: document.getElementById("termRows"),
+        contentTabs: document.getElementById("contentTabs"),
+        contentRows: document.getElementById("contentRows"),
+        previewStatus: document.getElementById("previewStatus"),
+        flowPreview: document.getElementById("flowPreview"),
+        ruleNote: document.getElementById("ruleNote"),
+        resetBtn: document.getElementById("resetBtn"),
+        newIpBtn: document.getElementById("newIpBtn"),
+        addTermBtn: document.getElementById("addTermBtn"),
+        addContentBtn: document.getElementById("addContentBtn"),
+        createDrawer: document.getElementById("createDrawer"),
+        closeCreateBtn: document.getElementById("closeCreateBtn"),
+        cancelCreateBtn: document.getElementById("cancelCreateBtn"),
+        previewCreateBtn: document.getElementById("previewCreateBtn"),
+        saveCreateBtn: document.getElementById("saveCreateBtn"),
+        createIpName: document.getElementById("createIpName"),
+        createIpType: document.getElementById("createIpType"),
+        createIntro: document.getElementById("createIntro"),
+        createEnableSwitch: document.getElementById("createEnableSwitch"),
+        createEnableText: document.getElementById("createEnableText"),
+        createRegion: document.getElementById("createRegion"),
+        createDefaultContentSearch: document.getElementById("createDefaultContentSearch"),
+        createDefaultContentSelect: document.getElementById("createDefaultContentSelect"),
+        createAddTermBtn: document.getElementById("createAddTermBtn"),
+        createAddContentBtn: document.getElementById("createAddContentBtn"),
+        createTermRows: document.getElementById("createTermRows"),
+        createContentRows: document.getElementById("createContentRows"),
+        refreshCreatePreviewBtn: document.getElementById("refreshCreatePreviewBtn"),
+        createPreview: document.getElementById("createPreview"),
+        termDrawer: document.getElementById("termDrawer"),
+        closeTermBtn: document.getElementById("closeTermBtn"),
+        cancelTermBtn: document.getElementById("cancelTermBtn"),
+        saveTermBtn: document.getElementById("saveTermBtn"),
+        termPreviewBtn: document.getElementById("termPreviewBtn"),
+        termIpReadonly: document.getElementById("termIpReadonly"),
+        termKeyword: document.getElementById("termKeyword"),
+        termEnableSwitch: document.getElementById("termEnableSwitch"),
+        termEnableText: document.getElementById("termEnableText"),
+        termPreview: document.getElementById("termPreview"),
+        contentDrawer: document.getElementById("contentDrawer"),
+        closeContentBtn: document.getElementById("closeContentBtn"),
+        cancelContentBtn: document.getElementById("cancelContentBtn"),
+        saveContentBtn: document.getElementById("saveContentBtn"),
+        contentPreviewBtn: document.getElementById("contentPreviewBtn"),
+        contentIpReadonly: document.getElementById("contentIpReadonly"),
+        bindContentName: document.getElementById("bindContentName"),
+        bindContentId: document.getElementById("bindContentId"),
+        bindContentType: document.getElementById("bindContentType"),
+        bindContentTab: document.getElementById("bindContentTab"),
+        bindContentSeason: document.getElementById("bindContentSeason"),
+        bindContentOrder: document.getElementById("bindContentOrder"),
+        contentVisibleSwitch: document.getElementById("contentVisibleSwitch"),
+        contentVisibleText: document.getElementById("contentVisibleText"),
+        contentDefaultSwitch: document.getElementById("contentDefaultSwitch"),
+        contentDefaultText: document.getElementById("contentDefaultText"),
+        bindContentRegion: document.getElementById("bindContentRegion"),
+        contentPreview: document.getElementById("contentPreview"),
+      };
+
+      function currentIp() {
+        return ipList.find((ip) => ip.id === selectedIpId) || ipList[0];
+      }
+
+      function statusChip(enabled) {
+        return `<span class="chip ${enabled ? "green" : "gray"}">${enabled ? "启用" : "关闭"}</span>`;
+      }
+
+      function tabLabel(key) {
+        return tabMap.find((item) => item.key === key)?.label || key;
+      }
+
+      function typeToTab(type) {
+        const map = {
+          电影: "movie",
+          电视剧: "tv",
+          动漫: "anime",
+          短剧: "short",
+        };
+        return map[type] || "tv";
+      }
+
+      function setSwitchState(button, enabled) {
+        button.classList.toggle("on", enabled);
+      }
+
+      function openDrawer(drawer) {
+        drawer.classList.add("open");
+        drawer.setAttribute("aria-hidden", "false");
+      }
+
+      function closeDrawer(drawer) {
+        drawer.classList.remove("open");
+        drawer.setAttribute("aria-hidden", "true");
+      }
+
+      function todayText() {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function nextIpId() {
+        const maxId = ipList.reduce((max, ip) => {
+          const idNumber = Number(String(ip.id).replace("IP", ""));
+          return Number.isFinite(idNumber) ? Math.max(max, idNumber) : max;
+        }, 10000);
+        return `IP${maxId + 1}`;
+      }
+
+      function rowsForTab(ip) {
+        if (activeTab === "all") return ip.contents;
+        return ip.contents.filter((item) => item.tab === activeTab);
+      }
+
+      function countsByTab(ip) {
+        return tabMap.reduce((acc, tab) => {
+          acc[tab.key] =
+            tab.key === "all"
+              ? ip.contents.length
+              : ip.contents.filter((item) => item.tab === tab.key).length;
+          return acc;
+        }, {});
+      }
+
+      function renderIpList() {
+        const query = els.ipSearch.value.trim().toLowerCase();
+        const filtered = ipList.filter((ip) => {
+          const text = `${ip.name} ${ip.id}`.toLowerCase();
+          return text.includes(query);
+        });
+
+        els.ipList.innerHTML = filtered
+          .map(
+            (ip) => `
+              <button class="ip-item ${ip.id === selectedIpId ? "active" : ""}" type="button" data-ip-id="${ip.id}">
+                <div class="ip-logo ${ip.logoTone}">${ip.logo}</div>
+                <div>
+                  <div class="ip-name">${ip.name}</div>
+                  <div class="ip-id">${ip.id}</div>
+                </div>
+                <div class="ip-meta">
+                  ${statusChip(ip.enabled)}
+                  <div class="ip-region-small">${ip.regions}</div>
+                </div>
+              </button>
+            `,
+          )
+          .join("");
+
+        els.ipList.querySelectorAll(".ip-item").forEach((button) => {
+          button.addEventListener("click", () => {
+            selectedIpId = button.dataset.ipId;
+            activeTab = "all";
+            render();
+          });
+        });
+      }
+
+      function renderBasic(ip) {
+        els.basicName.textContent = ip.name;
+        els.basicType.textContent = ip.type;
+        els.defaultContent.textContent = ip.defaultContent;
+        els.updateInfo.textContent = `${ip.updatedBy} / ${ip.updatedAt}`;
+        els.regionSelect.value = ip.regions;
+        els.moduleSwitch.classList.toggle("on", ip.enabled);
+        els.moduleStatusText.innerHTML = statusChip(ip.enabled);
+      }
+
+      function renderTerms(ip) {
+        els.termRows.innerHTML = ip.terms
+          .map(
+            (term) => `
+              <tr>
+                <td title="${term.word}">${term.word}</td>
+                <td>${ip.name}</td>
+                <td>${statusChip(term.enabled)}</td>
+              </tr>
+            `,
+          )
+          .join("");
+      }
+
+      function renderTabs(ip) {
+        const counts = countsByTab(ip);
+        els.contentTabs.innerHTML = tabMap
+          .map(
+            (tab) => `
+              <button class="tab ${activeTab === tab.key ? "active" : ""}" type="button" data-tab="${tab.key}">
+                ${tab.label} ${counts[tab.key]}
+              </button>
+            `,
+          )
+          .join("");
+
+        els.contentTabs.querySelectorAll(".tab").forEach((button) => {
+          button.addEventListener("click", () => {
+            activeTab = button.dataset.tab;
+            renderContent(ip);
+            renderPreview(ip);
+            renderTabs(ip);
+          });
+        });
+      }
+
+      function renderContent(ip) {
+        const rows = rowsForTab(ip);
+        if (!rows.length) {
+          els.contentRows.innerHTML = `
+            <tr>
+              <td colspan="7">
+                <div class="empty">当前分类暂无绑定内容</div>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        els.contentRows.innerHTML = rows
+          .map(
+            (item) => `
+              <tr>
+                <td title="${item.name}">${item.name}</td>
+                <td>${item.id}</td>
+                <td>${item.type}</td>
+                <td>${tabLabel(item.tab)}</td>
+                <td>${item.season}</td>
+                <td>${item.order}</td>
+                <td>${item.visible ? '<span class="chip green">开</span>' : '<span class="chip red">关</span>'}</td>
+              </tr>
+            `,
+          )
+          .join("");
+      }
+
+      function renderPreview(ip) {
+        els.previewStatus.innerHTML = `
+          <span>模块状态:</span>${statusChip(ip.enabled)}
+          <span>地区:</span><span class="chip blue">${ip.regions}</span>
+        `;
+
+        const topTerms = ip.terms.slice(0, 4);
+        const termHtml = topTerms
+          .map((term) => `<div class="term-pill">${term.word}</div>`)
+          .join("");
+
+        const moduleHtml = tabMap
+          .map((tab) => {
+            const rows =
+              tab.key === "all"
+                ? ip.contents.filter((item) => item.visible)
+                : ip.contents.filter((item) => item.tab === tab.key);
+            const pills = rows.length
+              ? rows
+                  .slice(0, 3)
+                  .map(
+                    (item) =>
+                      `<div class="content-pill ${item.visible ? "" : "off"}">${item.name}${item.visible ? "" : "（模块关）"}</div>`,
+                  )
+                  .join("")
+              : '<div class="empty">暂无内容</div>';
+            return `
+              <div class="module-tab ${activeTab === tab.key ? "active-preview" : ""}">
+                <h4>${tab.label}</h4>
+                <div class="pill-stack">${pills}</div>
+              </div>
+            `;
+          })
+          .join("");
+
+        els.flowPreview.classList.toggle("module-off", !ip.enabled);
+        els.flowPreview.innerHTML = `
+          <div class="flow-box">
+            <div class="flow-title">搜索词</div>
+            <div class="term-stack">
+              ${termHtml}
+              <div class="term-pill">......</div>
+            </div>
+          </div>
+          <div class="arrow">></div>
+          <div class="flow-box ip-center">
+            <div class="ip-logo ${ip.logoTone}">${ip.logo}</div>
+            <div>
+              <div class="ip-name">IP: ${ip.name}</div>
+              <div class="hint">${ip.id} / ${ip.type}</div>
+            </div>
+            <div>${statusChip(ip.enabled)}</div>
+            <div class="chip blue">${ip.regions}</div>
+          </div>
+          <div class="arrow">></div>
+          <div class="flow-box">
+            <div class="flow-title">搜索结果页 IP模块</div>
+            <div class="module-preview">${moduleHtml}</div>
+          </div>
+        `;
+
+        els.ruleNote.textContent = ip.enabled
+          ? "说明：用户命中任一启用搜索词后，先映射到对应 IP；IP模块按地区展示生效，模块内内容按配置的分类Tab展示。单条内容关闭模块展示时，不出现在前台IP模块中。"
+          : "说明：当前IP模块处于关闭状态。搜索词与内容绑定关系仍可维护，但前台搜索结果页不展示该IP模块。";
+      }
+
+      function render() {
+        const ip = currentIp();
+        renderIpList();
+        renderBasic(ip);
+        renderTerms(ip);
+        renderTabs(ip);
+        renderContent(ip);
+        renderPreview(ip);
+      }
+
+      function resetCreateDraft() {
+        createEnabled = true;
+        els.createIpName.value = "银河旅人";
+        els.createIpType.value = "影视IP";
+        els.createIntro.value = "银河旅人是一组围绕同名科幻影视IP聚合的电影、电视剧和动画内容。";
+        els.createRegion.value = "全部地区";
+        els.createDefaultContentSearch.value = "";
+        createDefaultContentId = "C50001";
+        setSwitchState(els.createEnableSwitch, true);
+        els.createEnableText.className = "chip green";
+        els.createEnableText.textContent = "启用";
+        createTermDrafts = [
+          { word: "银河旅人", enabled: true },
+          { word: "银河旅人系列", enabled: true },
+          { word: "诺亚船长", enabled: true },
+        ];
+        createContentDrafts = [
+          {
+            name: "银河旅人 第1季",
+            id: "C50001",
+            type: "电视剧",
+            tab: "tv",
+            season: "第1季",
+            order: "默认首推",
+            visible: true,
+          },
+          {
+            name: "银河旅人: 启航",
+            id: "C50002",
+            type: "电影",
+            tab: "movie",
+            season: "2026",
+            order: "2",
+            visible: true,
+          },
+        ];
+        renderCreateTermRows();
+        renderCreateContentRows();
+        renderCreateDefaultOptions();
+        renderCreatePreview();
+      }
+
+      function collectCreateTermDrafts() {
+        createTermDrafts = Array.from(els.createTermRows.querySelectorAll(".mini-row")).map((row) => ({
+          word: row.querySelector("[data-field='word']").value.trim(),
+          enabled: row.querySelector("[data-field='enabled']").value === "启用",
+        }));
+      }
+
+      function collectCreateContentDrafts() {
+        createContentDrafts = Array.from(els.createContentRows.querySelectorAll(".mini-row")).map((row) => ({
+          name: row.querySelector("[data-field='name']").value.trim(),
+          id: row.querySelector("[data-field='id']").value.trim(),
+          type: row.querySelector("[data-field='type']").value,
+          tab: row.querySelector("[data-field='tab']").value,
+          season: row.querySelector("[data-field='season']").value.trim(),
+          order: row.querySelector("[data-field='order']").value.trim(),
+          visible: row.querySelector("[data-field='visible']").value === "开",
+        }));
+      }
+
+      function renderCreateTermRows() {
+        els.createTermRows.innerHTML = createTermDrafts
+          .map(
+            (term, index) => `
+              <div class="mini-row" data-index="${index}">
+                <input class="form-input" data-field="word" value="${term.word}" placeholder="搜索词" />
+                <select data-field="enabled">
+                  <option value="启用" ${term.enabled ? "selected" : ""}>启用</option>
+                  <option value="关闭" ${!term.enabled ? "selected" : ""}>关闭</option>
+                </select>
+                <button class="icon-btn" type="button" data-remove-term="${index}">×</button>
+              </div>
+            `,
+          )
+          .join("");
+
+        els.createTermRows.querySelectorAll("[data-remove-term]").forEach((button) => {
+          button.addEventListener("click", () => {
+            collectCreateTermDrafts();
+            createTermDrafts.splice(Number(button.dataset.removeTerm), 1);
+            renderCreateTermRows();
+            renderCreatePreview();
+          });
+        });
+
+        els.createTermRows.querySelectorAll("input, select").forEach((input) => {
+          input.addEventListener("input", renderCreatePreview);
+          input.addEventListener("change", renderCreatePreview);
+        });
+      }
+
+      function renderCreateContentRows() {
+        els.createContentRows.innerHTML = createContentDrafts
+          .map(
+            (item, index) => `
+              <div class="mini-row" data-index="${index}">
+                <input class="form-input" data-field="name" value="${item.name}" placeholder="内容名称" />
+                <input class="form-input" data-field="id" value="${item.id}" placeholder="内容ID" />
+                <select data-field="type">
+                  <option value="电视剧" ${item.type === "电视剧" ? "selected" : ""}>电视剧</option>
+                  <option value="电影" ${item.type === "电影" ? "selected" : ""}>电影</option>
+                  <option value="动漫" ${item.type === "动漫" ? "selected" : ""}>动漫</option>
+                  <option value="短剧" ${item.type === "短剧" ? "selected" : ""}>短剧</option>
+                </select>
+                <select data-field="tab">
+                  <option value="tv" ${item.tab === "tv" ? "selected" : ""}>电视剧</option>
+                  <option value="movie" ${item.tab === "movie" ? "selected" : ""}>电影</option>
+                  <option value="anime" ${item.tab === "anime" ? "selected" : ""}>动漫</option>
+                  <option value="short" ${item.tab === "short" ? "selected" : ""}>短剧</option>
+                </select>
+                <input class="form-input" data-field="season" value="${item.season}" placeholder="季/年份" />
+                <input class="form-input" data-field="order" value="${item.order}" placeholder="排序" />
+                <select data-field="visible">
+                  <option value="开" ${item.visible ? "selected" : ""}>开</option>
+                  <option value="关" ${!item.visible ? "selected" : ""}>关</option>
+                </select>
+                <button class="icon-btn" type="button" data-remove-content="${index}">×</button>
+              </div>
+            `,
+          )
+          .join("");
+
+        els.createContentRows.querySelectorAll("[data-remove-content]").forEach((button) => {
+          button.addEventListener("click", () => {
+            collectCreateContentDrafts();
+            createContentDrafts.splice(Number(button.dataset.removeContent), 1);
+            renderCreateContentRows();
+            renderCreatePreview();
+          });
+        });
+
+        els.createContentRows.querySelectorAll("input, select").forEach((input) => {
+          input.addEventListener("input", renderCreatePreview);
+          input.addEventListener("change", renderCreatePreview);
+        });
+      }
+
+      function renderCreateDefaultOptions() {
+        const previous = els.createDefaultContentSelect.value || createDefaultContentId;
+        const query = els.createDefaultContentSearch.value.trim().toLowerCase();
+        const candidates = createContentDrafts.filter((item) => {
+          if (!item.name || !item.id) return false;
+          const target = `${item.name} ${item.id}`.toLowerCase();
+          return !query || target.includes(query);
+        });
+
+        if (!candidates.length) {
+          createDefaultContentId = "";
+          els.createDefaultContentSelect.innerHTML = '<option value="">暂无匹配内容</option>';
+          return;
+        }
+
+        const nextValue = candidates.some((item) => item.id === previous) ? previous : candidates[0].id;
+        createDefaultContentId = nextValue;
+        els.createDefaultContentSelect.innerHTML = candidates
+          .map(
+            (item) =>
+              `<option value="${item.id}" ${item.id === nextValue ? "selected" : ""}>${item.name}（${item.id}）</option>`,
+          )
+          .join("");
+      }
+
+      function selectedCreateDefaultContent(fallback) {
+        const selectedId = els.createDefaultContentSelect.value || createDefaultContentId;
+        const selected = createContentDrafts.find((item) => item.id === selectedId);
+        return selected?.name || fallback;
+      }
+
+      function renderCreatePreview() {
+        collectCreateTermDrafts();
+        collectCreateContentDrafts();
+        renderCreateDefaultOptions();
+        const ipName = els.createIpName.value.trim() || "未填写IP名称";
+        const activeTerms = createTermDrafts.filter((term) => term.word);
+        const visibleContents = createContentDrafts.filter((item) => item.name && item.visible);
+        const termText = activeTerms.length
+          ? activeTerms.map((term) => term.word).join(" / ")
+          : "暂无搜索词";
+        const defaultText = selectedCreateDefaultContent("系统按近24小时启播兜底");
+        const contentText = visibleContents.length
+          ? visibleContents.map((item) => `${item.name} -> ${tabLabel(item.tab)}`).join(" / ")
+          : "暂无展示内容";
+        els.createPreview.innerHTML = `
+          <div class="preview-card">
+            <h4>搜索词</h4>
+            <p>${termText}</p>
+          </div>
+          <div class="preview-card">
+            <h4>映射IP</h4>
+            <p>${ipName}<br />模块状态：${createEnabled ? "启用" : "关闭"}<br />地区：${els.createRegion.value}<br />默认首推：${defaultText}</p>
+          </div>
+          <div class="preview-card">
+            <h4>IP模块内容</h4>
+            <p>${contentText}</p>
+          </div>
+        `;
+      }
+
+      function saveCreateDraft() {
+        collectCreateTermDrafts();
+        collectCreateContentDrafts();
+        renderCreateDefaultOptions();
+        const name = els.createIpName.value.trim();
+        if (!name) {
+          alert("请填写IP名称");
+          return;
+        }
+        const validTerms = createTermDrafts.filter((term) => term.word);
+        if (!validTerms.length) {
+          alert("请至少配置一个搜索词");
+          return;
+        }
+        const validContents = createContentDrafts.filter((item) => item.name && item.id);
+        if (!validContents.length) {
+          alert("请至少绑定一个内容");
+          return;
+        }
+        const newIp = {
+          id: nextIpId(),
+          name,
+          logo: name.slice(0, 1),
+          logoTone: "blue",
+          type: els.createIpType.value,
+          enabled: createEnabled,
+          regions: els.createRegion.value,
+          defaultContent: selectedCreateDefaultContent(validContents[0].name),
+          updatedBy: "当前运营",
+          updatedAt: todayText(),
+          terms: validTerms,
+          contents: validContents.map((item, index) => ({
+            ...item,
+            order: item.order || String(index + 1),
+            season: item.season || "-",
+          })),
+        };
+        ipList.push(newIp);
+        selectedIpId = newIp.id;
+        activeTab = "all";
+        els.ipSearch.value = "";
+        closeDrawer(els.createDrawer);
+        render();
+      }
+
+      function resetTermForm() {
+        const ip = currentIp();
+        termEnabled = true;
+        els.termIpReadonly.textContent = `${ip.name} / ${ip.id}`;
+        els.termKeyword.value = "";
+        setSwitchState(els.termEnableSwitch, true);
+        els.termEnableText.className = "chip green";
+        els.termEnableText.textContent = "启用";
+        renderTermPreview();
+      }
+
+      function renderTermPreview() {
+        const ip = currentIp();
+        const keyword = els.termKeyword.value.trim() || "待填写搜索词";
+        els.termPreview.innerHTML = `
+          <div class="preview-card">
+            <h4>搜索词</h4>
+            <p>${keyword}</p>
+          </div>
+          <div class="preview-card">
+            <h4>映射IP</h4>
+            <p>${ip.name}<br />${ip.id}</p>
+          </div>
+          <div class="preview-card">
+            <h4>触发状态</h4>
+            <p>${termEnabled ? "启用后可参与IP模块触发" : "关闭后仅保留配置，不参与触发"}</p>
+          </div>
+        `;
+      }
+
+      function saveTerm() {
+        const ip = currentIp();
+        const keyword = els.termKeyword.value.trim();
+        if (!keyword) {
+          alert("请填写搜索词");
+          return;
+        }
+        const exists = ip.terms.some((term) => term.word === keyword);
+        if (exists) {
+          alert("当前IP下已存在相同搜索词");
+          return;
+        }
+        ip.terms.push({
+          word: keyword,
+          enabled: termEnabled,
+        });
+        ip.updatedBy = "当前运营";
+        ip.updatedAt = todayText();
+        closeDrawer(els.termDrawer);
+        render();
+      }
+
+      function resetContentForm() {
+        const ip = currentIp();
+        contentVisible = true;
+        contentAsDefault = false;
+        els.contentIpReadonly.textContent = `${ip.name} / ${ip.id}`;
+        els.bindContentName.value = "";
+        els.bindContentId.value = "";
+        els.bindContentType.value = "电视剧";
+        els.bindContentTab.value = "tv";
+        els.bindContentSeason.value = "";
+        els.bindContentOrder.value = "";
+        els.bindContentRegion.value = "跟随IP地区";
+        setSwitchState(els.contentVisibleSwitch, true);
+        els.contentVisibleText.className = "chip green";
+        els.contentVisibleText.textContent = "开";
+        setSwitchState(els.contentDefaultSwitch, false);
+        els.contentDefaultText.className = "chip gray";
+        els.contentDefaultText.textContent = "否";
+        renderContentBindPreview();
+      }
+
+      function renderContentBindPreview() {
+        const ip = currentIp();
+        const name = els.bindContentName.value.trim() || "待填写内容名称";
+        const id = els.bindContentId.value.trim() || "待填写内容ID";
+        els.contentPreview.innerHTML = `
+          <div class="preview-card">
+            <h4>绑定内容</h4>
+            <p>${name}<br />${id}<br />类型：${els.bindContentType.value}</p>
+          </div>
+          <div class="preview-card">
+            <h4>展示位置</h4>
+            <p>IP：${ip.name}<br />Tab：${tabLabel(els.bindContentTab.value)}<br />排序：${els.bindContentOrder.value.trim() || "追加到末尾"}</p>
+          </div>
+          <div class="preview-card">
+            <h4>模块规则</h4>
+            <p>模块展示：${contentVisible ? "开" : "关"}<br />默认首推：${contentAsDefault ? "是" : "否"}<br />地区：${els.bindContentRegion.value}</p>
+          </div>
+        `;
+      }
+
+      function saveContentBinding() {
+        const ip = currentIp();
+        const name = els.bindContentName.value.trim();
+        const id = els.bindContentId.value.trim();
+        if (!name) {
+          alert("请填写内容名称");
+          return;
+        }
+        if (!id) {
+          alert("请填写内容ID");
+          return;
+        }
+        const exists = ip.contents.some((item) => item.id === id);
+        if (exists) {
+          alert("当前IP下已绑定相同内容ID");
+          return;
+        }
+        const content = {
+          name,
+          id,
+          type: els.bindContentType.value,
+          tab: els.bindContentTab.value,
+          season: els.bindContentSeason.value.trim() || "-",
+          order: contentAsDefault ? "默认首推" : els.bindContentOrder.value.trim() || String(ip.contents.length + 1),
+          visible: contentVisible,
+        };
+        if (contentAsDefault) {
+          ip.defaultContent = name;
+          ip.contents = ip.contents.map((item, index) => ({
+            ...item,
+            order: item.order === "默认首推" ? String(index + 1) : item.order,
+          }));
+        }
+        ip.contents.push(content);
+        ip.updatedBy = "当前运营";
+        ip.updatedAt = todayText();
+        activeTab = content.tab;
+        closeDrawer(els.contentDrawer);
+        render();
+      }
+
+      els.ipSearch.addEventListener("input", renderIpList);
+
+      els.moduleSwitch.addEventListener("click", () => {
+        const ip = currentIp();
+        ip.enabled = !ip.enabled;
+        render();
+      });
+
+      els.regionSelect.addEventListener("change", () => {
+        const ip = currentIp();
+        ip.regions = els.regionSelect.value;
+        render();
+      });
+
+      els.resetBtn.addEventListener("click", () => {
+        ipList = JSON.parse(JSON.stringify(initialIpList));
+        selectedIpId = ipList[0].id;
+        activeTab = "all";
+        els.ipSearch.value = "";
+        render();
+      });
+
+      els.newIpBtn.addEventListener("click", () => {
+        resetCreateDraft();
+        openDrawer(els.createDrawer);
+      });
+
+      els.closeCreateBtn.addEventListener("click", () => closeDrawer(els.createDrawer));
+      els.cancelCreateBtn.addEventListener("click", () => closeDrawer(els.createDrawer));
+      els.previewCreateBtn.addEventListener("click", renderCreatePreview);
+      els.refreshCreatePreviewBtn.addEventListener("click", renderCreatePreview);
+      els.saveCreateBtn.addEventListener("click", saveCreateDraft);
+
+      els.createEnableSwitch.addEventListener("click", () => {
+        createEnabled = !createEnabled;
+        setSwitchState(els.createEnableSwitch, createEnabled);
+        els.createEnableText.className = `chip ${createEnabled ? "green" : "gray"}`;
+        els.createEnableText.textContent = createEnabled ? "启用" : "关闭";
+        renderCreatePreview();
+      });
+
+      els.createAddTermBtn.addEventListener("click", () => {
+        collectCreateTermDrafts();
+        createTermDrafts.push({ word: "", enabled: true });
+        renderCreateTermRows();
+      });
+
+      els.createAddContentBtn.addEventListener("click", () => {
+        collectCreateContentDrafts();
+        createContentDrafts.push({
+          name: "",
+          id: "",
+          type: "电视剧",
+          tab: "tv",
+          season: "",
+          order: "",
+          visible: true,
+        });
+        renderCreateContentRows();
+        renderCreateDefaultOptions();
+      });
+
+      [els.createIpName, els.createIpType, els.createRegion].forEach((input) => {
+        input.addEventListener("input", renderCreatePreview);
+        input.addEventListener("change", renderCreatePreview);
+      });
+
+      els.createDefaultContentSearch.addEventListener("input", () => {
+        collectCreateContentDrafts();
+        renderCreateDefaultOptions();
+        renderCreatePreview();
+      });
+
+      els.createDefaultContentSelect.addEventListener("change", () => {
+        createDefaultContentId = els.createDefaultContentSelect.value;
+        renderCreatePreview();
+      });
+
+      els.addTermBtn.addEventListener("click", () => {
+        resetTermForm();
+        openDrawer(els.termDrawer);
+      });
+
+      els.closeTermBtn.addEventListener("click", () => closeDrawer(els.termDrawer));
+      els.cancelTermBtn.addEventListener("click", () => closeDrawer(els.termDrawer));
+      els.termPreviewBtn.addEventListener("click", renderTermPreview);
+      els.saveTermBtn.addEventListener("click", saveTerm);
+
+      els.termEnableSwitch.addEventListener("click", () => {
+        termEnabled = !termEnabled;
+        setSwitchState(els.termEnableSwitch, termEnabled);
+        els.termEnableText.className = `chip ${termEnabled ? "green" : "gray"}`;
+        els.termEnableText.textContent = termEnabled ? "启用" : "关闭";
+        renderTermPreview();
+      });
+
+      [els.termKeyword].forEach((input) => {
+        input.addEventListener("input", renderTermPreview);
+        input.addEventListener("change", renderTermPreview);
+      });
+
+      els.addContentBtn.addEventListener("click", () => {
+        resetContentForm();
+        openDrawer(els.contentDrawer);
+      });
+
+      els.closeContentBtn.addEventListener("click", () => closeDrawer(els.contentDrawer));
+      els.cancelContentBtn.addEventListener("click", () => closeDrawer(els.contentDrawer));
+      els.contentPreviewBtn.addEventListener("click", renderContentBindPreview);
+      els.saveContentBtn.addEventListener("click", saveContentBinding);
+
+      els.bindContentType.addEventListener("change", () => {
+        els.bindContentTab.value = typeToTab(els.bindContentType.value);
+        renderContentBindPreview();
+      });
+
+      [els.bindContentName, els.bindContentId, els.bindContentTab, els.bindContentSeason, els.bindContentOrder, els.bindContentRegion].forEach(
+        (input) => {
+          input.addEventListener("input", renderContentBindPreview);
+          input.addEventListener("change", renderContentBindPreview);
+        },
+      );
+
+      els.contentVisibleSwitch.addEventListener("click", () => {
+        contentVisible = !contentVisible;
+        setSwitchState(els.contentVisibleSwitch, contentVisible);
+        els.contentVisibleText.className = `chip ${contentVisible ? "green" : "red"}`;
+        els.contentVisibleText.textContent = contentVisible ? "开" : "关";
+        renderContentBindPreview();
+      });
+
+      els.contentDefaultSwitch.addEventListener("click", () => {
+        contentAsDefault = !contentAsDefault;
+        setSwitchState(els.contentDefaultSwitch, contentAsDefault);
+        els.contentDefaultText.className = `chip ${contentAsDefault ? "green" : "gray"}`;
+        els.contentDefaultText.textContent = contentAsDefault ? "是" : "否";
+        if (contentAsDefault && !els.bindContentOrder.value.trim()) {
+          els.bindContentOrder.value = "默认首推";
+        }
+        if (!contentAsDefault && els.bindContentOrder.value.trim() === "默认首推") {
+          els.bindContentOrder.value = "";
+        }
+        renderContentBindPreview();
+      });
+
+      render();
+    </script>
+  </body>
+</html>
