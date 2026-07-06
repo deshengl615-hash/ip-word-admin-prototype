@@ -964,7 +964,10 @@
           <section class="panel pad">
             <div class="relationship-head">
               <h2 class="panel-title">IP基础配置</h2>
-              <button class="ghost-btn" type="button" id="resetBtn">恢复示例数据</button>
+              <div class="inline-controls">
+                <button class="secondary-btn" type="button" id="editIpInfoBtn">编辑IP信息</button>
+                <button class="ghost-btn" type="button" id="resetBtn">恢复示例数据</button>
+              </div>
             </div>
             <div class="basic-grid">
               <div class="field-grid">
@@ -1246,6 +1249,78 @@
           <button class="ghost-btn" type="button" id="cancelCreateBtn">取消</button>
           <button class="secondary-btn" type="button" id="previewCreateBtn">预览关系</button>
           <button class="primary-btn" type="button" id="saveCreateBtn">保存草稿</button>
+        </footer>
+      </div>
+    </section>
+
+    <section class="drawer-mask" id="editInfoDrawer" aria-hidden="true">
+      <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="editInfoTitle">
+        <header class="drawer-header">
+          <div class="drawer-title">
+            <h2 id="editInfoTitle">编辑IP信息</h2>
+            <p>用于修改已创建IP的竖版封面、IP名称和IP简介。搜索词与绑定内容不受影响。</p>
+          </div>
+          <button class="ghost-btn" type="button" id="closeEditInfoBtn">关闭</button>
+        </header>
+
+        <div class="drawer-body">
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>IP基础信息</h3>
+                <p>修改后会同步影响后台列表、搜索结果页IP信息区，以及多语言前台展示文案。</p>
+              </div>
+              <span class="chip blue">当前IP</span>
+            </div>
+            <div class="form-grid">
+              <div class="form-item">
+                <span class="form-label">IP ID</span>
+                <div class="readonly-box" id="editInfoIpId"></div>
+              </div>
+
+              <div class="form-item">
+                <span class="form-label">IP类型</span>
+                <div class="readonly-box" id="editInfoIpType"></div>
+              </div>
+
+              <div class="form-item full">
+                <span class="form-label">IP封面</span>
+                <div class="cover-uploader">
+                  <div class="cover-preview" id="editCoverPreview"><span>封面</span></div>
+                  <div class="cover-actions">
+                    <input class="form-input" id="editCoverInput" type="file" accept="image/*" />
+                    <div class="inline-controls">
+                      <button class="ghost-btn" type="button" id="removeEditCoverBtn">清除封面</button>
+                      <span class="chip blue">竖版 2:3</span>
+                    </div>
+                    <span class="hint">用于搜索结果页 IP 信息区主图。未上传时使用后台占位封面；上传后会替换当前IP封面。</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-item full">
+                <span class="form-label">IP名称 / IP简介 多语言 <span class="required">*</span></span>
+                <div class="locale-editor" id="editLocaleEditor"></div>
+                <span class="hint">简体中文 IP名称必填；其他语言可选填。未配置语言前台回退简体中文。</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-head">
+              <div>
+                <h3>修改预览</h3>
+                <p>保存后仅更新当前IP的基础信息，不新增搜索词或绑定内容。</p>
+              </div>
+              <button class="ghost-btn" type="button" id="refreshEditInfoPreviewBtn">刷新预览</button>
+            </div>
+            <div class="create-preview" id="editInfoPreview"></div>
+          </section>
+        </div>
+
+        <footer class="drawer-footer">
+          <button class="ghost-btn" type="button" id="cancelEditInfoBtn">取消</button>
+          <button class="primary-btn" type="button" id="saveEditInfoBtn">保存修改</button>
         </footer>
       </div>
     </section>
@@ -1716,6 +1791,8 @@
       let createDefaultContentId = "";
       let createCoverUrl = "";
       let createLocaleDraft = {};
+      let editCoverUrl = "";
+      let editLocaleDraft = {};
       let createTermDrafts = [];
       let createContentDrafts = [];
       let termEnabled = true;
@@ -1743,6 +1820,7 @@
         flowPreview: document.getElementById("flowPreview"),
         ruleNote: document.getElementById("ruleNote"),
         resetBtn: document.getElementById("resetBtn"),
+        editIpInfoBtn: document.getElementById("editIpInfoBtn"),
         newIpBtn: document.getElementById("newIpBtn"),
         addTermBtn: document.getElementById("addTermBtn"),
         addContentBtn: document.getElementById("addContentBtn"),
@@ -1767,6 +1845,18 @@
         createContentRows: document.getElementById("createContentRows"),
         refreshCreatePreviewBtn: document.getElementById("refreshCreatePreviewBtn"),
         createPreview: document.getElementById("createPreview"),
+        editInfoDrawer: document.getElementById("editInfoDrawer"),
+        closeEditInfoBtn: document.getElementById("closeEditInfoBtn"),
+        cancelEditInfoBtn: document.getElementById("cancelEditInfoBtn"),
+        saveEditInfoBtn: document.getElementById("saveEditInfoBtn"),
+        refreshEditInfoPreviewBtn: document.getElementById("refreshEditInfoPreviewBtn"),
+        editInfoIpId: document.getElementById("editInfoIpId"),
+        editInfoIpType: document.getElementById("editInfoIpType"),
+        editCoverInput: document.getElementById("editCoverInput"),
+        editCoverPreview: document.getElementById("editCoverPreview"),
+        removeEditCoverBtn: document.getElementById("removeEditCoverBtn"),
+        editLocaleEditor: document.getElementById("editLocaleEditor"),
+        editInfoPreview: document.getElementById("editInfoPreview"),
         termDrawer: document.getElementById("termDrawer"),
         closeTermBtn: document.getElementById("closeTermBtn"),
         cancelTermBtn: document.getElementById("cancelTermBtn"),
@@ -2069,8 +2159,8 @@
         renderPreview(ip);
       }
 
-      function renderCreateLocaleEditor() {
-        els.createLocaleEditor.innerHTML = `
+      function renderLocaleEditor(container, draft, onChange) {
+        container.innerHTML = `
           <div class="locale-editor-head">
             <div>语言</div>
             <div>IP名称</div>
@@ -2078,7 +2168,7 @@
           </div>
           ${localeList
             .map((locale) => {
-              const item = createLocaleDraft[locale.key] || { name: "", intro: "" };
+              const item = draft[locale.key] || { name: "", intro: "" };
               return `
                 <div class="locale-row" data-locale="${locale.key}">
                   <div class="locale-name">
@@ -2093,21 +2183,29 @@
             .join("")}
         `;
 
-        els.createLocaleEditor.querySelectorAll("input, textarea").forEach((input) => {
-          input.addEventListener("input", renderCreatePreview);
-          input.addEventListener("change", renderCreatePreview);
+        container.querySelectorAll("input, textarea").forEach((input) => {
+          input.addEventListener("input", onChange);
+          input.addEventListener("change", onChange);
         });
       }
 
-      function collectCreateLocaleDraft() {
-        createLocaleDraft = localeList.reduce((acc, locale) => {
-          const row = els.createLocaleEditor.querySelector(`[data-locale="${locale.key}"]`);
+      function collectLocaleDraft(container) {
+        return localeList.reduce((acc, locale) => {
+          const row = container.querySelector(`[data-locale="${locale.key}"]`);
           acc[locale.key] = {
             name: row?.querySelector("[data-field='name']")?.value.trim() || "",
             intro: row?.querySelector("[data-field='intro']")?.value.trim() || "",
           };
           return acc;
         }, {});
+      }
+
+      function renderCreateLocaleEditor() {
+        renderLocaleEditor(els.createLocaleEditor, createLocaleDraft, renderCreatePreview);
+      }
+
+      function collectCreateLocaleDraft() {
+        createLocaleDraft = collectLocaleDraft(els.createLocaleEditor);
         return createLocaleDraft;
       }
 
@@ -2382,6 +2480,72 @@
         render();
       }
 
+      function renderEditLocaleEditor() {
+        renderLocaleEditor(els.editLocaleEditor, editLocaleDraft, renderEditInfoPreview);
+      }
+
+      function collectEditLocaleDraft() {
+        editLocaleDraft = collectLocaleDraft(els.editLocaleEditor);
+        return editLocaleDraft;
+      }
+
+      function resetEditInfoForm() {
+        const ip = currentIp();
+        const i18n = normalizeIpI18n(ip);
+        editCoverUrl = ip.coverUrl || "";
+        editLocaleDraft = JSON.parse(JSON.stringify(i18n));
+        els.editInfoIpId.textContent = ip.id;
+        els.editInfoIpType.textContent = ip.type;
+        els.editCoverInput.value = "";
+        setCoverPreview(els.editCoverPreview, ip.logo || localizedIpName(ip).slice(0, 1), editCoverUrl);
+        renderEditLocaleEditor();
+        renderEditInfoPreview();
+      }
+
+      function renderEditInfoPreview() {
+        const ip = currentIp();
+        const i18n = collectEditLocaleDraft();
+        const ipName = i18n["zh-CN"].name || "未填写IP名称";
+        const introText = i18n["zh-CN"].intro || "未填写IP简介";
+        const localeCount = i18nFilledCount(i18n);
+        if (!editCoverUrl) {
+          setCoverPreview(els.editCoverPreview, ipName.slice(0, 1), editCoverUrl);
+        }
+        els.editInfoPreview.innerHTML = `
+          <div class="preview-card">
+            <h4>当前IP</h4>
+            <p>${ip.id}<br />${ip.type}<br />搜索词与绑定内容保持不变</p>
+          </div>
+          <div class="preview-card">
+            <h4>基础信息</h4>
+            <p>${ipName}<br />简介：${introText}<br />IP封面：${editCoverUrl ? "已上传竖版封面" : "使用占位封面"}</p>
+          </div>
+          <div class="preview-card">
+            <h4>多语言覆盖</h4>
+            <p>已填语言：${localeCount}/${localeList.length}<br />默认回退语言：简体中文<br />保存后立即更新当前IP信息区</p>
+          </div>
+        `;
+      }
+
+      function saveEditInfo() {
+        const ip = currentIp();
+        const i18n = collectEditLocaleDraft();
+        const name = i18n["zh-CN"].name.trim();
+        if (!name) {
+          alert("请填写简体中文IP名称");
+          return;
+        }
+        ip.name = name;
+        ip.intro = i18n["zh-CN"].intro;
+        ip.i18n = i18n;
+        ip.coverUrl = editCoverUrl;
+        ip.logo = name.slice(0, 1);
+        ip.updatedBy = "当前运营";
+        ip.updatedAt = todayText();
+        closeDrawer(els.editInfoDrawer);
+        render();
+      }
+
       function resetTermForm() {
         const ip = currentIp();
         termEnabled = true;
@@ -2538,6 +2702,16 @@
         render();
       });
 
+      els.editIpInfoBtn.addEventListener("click", () => {
+        resetEditInfoForm();
+        openDrawer(els.editInfoDrawer);
+      });
+
+      els.closeEditInfoBtn.addEventListener("click", () => closeDrawer(els.editInfoDrawer));
+      els.cancelEditInfoBtn.addEventListener("click", () => closeDrawer(els.editInfoDrawer));
+      els.refreshEditInfoPreviewBtn.addEventListener("click", renderEditInfoPreview);
+      els.saveEditInfoBtn.addEventListener("click", saveEditInfo);
+
       els.newIpBtn.addEventListener("click", () => {
         resetCreateDraft();
         openDrawer(els.createDrawer);
@@ -2579,6 +2753,32 @@
         els.createCoverInput.value = "";
         setCoverPreview(els.createCoverPreview, "封面", createCoverUrl);
         renderCreatePreview();
+      });
+
+      els.editCoverInput.addEventListener("change", () => {
+        const file = els.editCoverInput.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+          alert("请上传图片文件");
+          els.editCoverInput.value = "";
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          editCoverUrl = String(reader.result || "");
+          const name = editLocaleDraft["zh-CN"]?.name || currentIp().name;
+          setCoverPreview(els.editCoverPreview, name.slice(0, 1), editCoverUrl);
+          renderEditInfoPreview();
+        };
+        reader.readAsDataURL(file);
+      });
+
+      els.removeEditCoverBtn.addEventListener("click", () => {
+        editCoverUrl = "";
+        els.editCoverInput.value = "";
+        const name = editLocaleDraft["zh-CN"]?.name || currentIp().name;
+        setCoverPreview(els.editCoverPreview, name.slice(0, 1), editCoverUrl);
+        renderEditInfoPreview();
       });
 
       els.createAddTermBtn.addEventListener("click", () => {
