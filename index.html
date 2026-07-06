@@ -285,6 +285,78 @@
         color: var(--text);
       }
 
+      .value.multiline {
+        line-height: 1.55;
+        color: #344054;
+      }
+
+      .locale-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .locale-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        color: #475467;
+        background: #eef2f7;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .locale-chip.filled {
+        color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .locale-editor {
+        display: grid;
+        gap: 10px;
+      }
+
+      .locale-editor-head,
+      .locale-row {
+        display: grid;
+        grid-template-columns: 132px minmax(180px, 0.8fr) minmax(260px, 1.2fr);
+        gap: 10px;
+        align-items: start;
+      }
+
+      .locale-editor-head {
+        padding: 0 4px;
+        color: #475467;
+        font-weight: 700;
+      }
+
+      .locale-row {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcff;
+      }
+
+      .locale-name {
+        display: grid;
+        gap: 5px;
+      }
+
+      .locale-name strong {
+        color: #344054;
+      }
+
+      .locale-name span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .locale-row .form-textarea {
+        min-height: 66px;
+      }
+
       .hint {
         margin-top: 7px;
         color: var(--muted);
@@ -863,6 +935,10 @@
                   <div class="value" id="basicName"></div>
                 </div>
                 <div class="field">
+                  <div class="label">IP简介:</div>
+                  <div class="value multiline" id="basicIntro"></div>
+                </div>
+                <div class="field">
                   <div class="label">IP类型:</div>
                   <div class="value" id="basicType"></div>
                 </div>
@@ -902,6 +978,10 @@
                 <div class="field">
                   <div class="label">最近更新:</div>
                   <div class="value" id="updateInfo"></div>
+                </div>
+                <div class="field">
+                  <div class="label">多语言:</div>
+                  <div class="locale-chip-list" id="localeCoverage"></div>
                 </div>
               </div>
             </div>
@@ -986,12 +1066,6 @@
             </div>
             <div class="form-grid">
               <label class="form-item">
-                <span class="form-label">IP名称 <span class="required">*</span></span>
-                <input class="form-input" id="createIpName" value="银河旅人" placeholder="如：星际侠" />
-                <span class="hint">前台模块标题和后台列表主名称。</span>
-              </label>
-
-              <label class="form-item">
                 <span class="form-label">IP类型 <span class="required">*</span></span>
                 <select id="createIpType">
                   <option value="影视IP">影视IP</option>
@@ -1006,10 +1080,11 @@
                 <span class="hint">保存后由后台生成，示例中自动补一个临时ID。</span>
               </label>
 
-              <label class="form-item full">
-                <span class="form-label">IP简介</span>
-                <textarea class="form-textarea" id="createIntro" placeholder="用于搜索结果页IP简介区域，可为空。">银河旅人是一组围绕同名科幻影视IP聚合的电影、电视剧和动画内容。</textarea>
-              </label>
+              <div class="form-item full">
+                <span class="form-label">IP名称 / IP简介 多语言 <span class="required">*</span></span>
+                <div class="locale-editor" id="createLocaleEditor"></div>
+                <span class="hint">简体中文 IP名称必填，用于后台列表主名称和默认展示；其他语言可选填，前台按用户语言命中后展示对应文案，未配置时回退简体中文。</span>
+              </div>
             </div>
           </section>
 
@@ -1306,6 +1381,37 @@
           logo: "星",
           logoTone: "blue",
           type: "影视IP",
+          intro: "围绕星际英雄团队展开的科幻影视IP，聚合电影、电视剧、动漫与短剧内容。",
+          i18n: {
+            "zh-CN": {
+              name: "星际侠",
+              intro: "围绕星际英雄团队展开的科幻影视IP，聚合电影、电视剧、动漫与短剧内容。",
+            },
+            en: {
+              name: "Star Rangers",
+              intro: "A sci-fi screen IP centered on a team of space heroes.",
+            },
+            "es-419": {
+              name: "Guardianes Estelares",
+              intro: "IP audiovisual de ciencia ficcion con peliculas, series y animacion.",
+            },
+            "pt-BR": {
+              name: "Guardioes Estelares",
+              intro: "IP audiovisual de ficcao cientifica com filmes, series e animacoes.",
+            },
+            tr: {
+              name: "Yildiz Kahramanlari",
+              intro: "Uzay kahramanlarini merkez alan bilim kurgu ekran IP'si.",
+            },
+            ar: {
+              name: "أبطال النجوم",
+              intro: "عنوان خيال علمي يجمع الافلام والمسلسلات والرسوم المتحركة.",
+            },
+            fil: {
+              name: "Star Rangers",
+              intro: "Sci-fi IP tungkol sa pangkat ng mga bayani sa kalawakan.",
+            },
+          },
           enabled: true,
           regions: "全部地区",
           defaultContent: "星际侠 第2季",
@@ -1372,6 +1478,21 @@
           logo: "魔",
           logoTone: "purple",
           type: "影视IP",
+          intro: "围绕魔法学院师生展开的奇幻影视IP，包含多季剧集、电影和动画内容。",
+          i18n: {
+            "zh-CN": {
+              name: "魔法学院",
+              intro: "围绕魔法学院师生展开的奇幻影视IP，包含多季剧集、电影和动画内容。",
+            },
+            en: {
+              name: "Magic Academy",
+              intro: "A fantasy screen IP about teachers and students at a magic academy.",
+            },
+            "pt-BR": {
+              name: "Academia de Magia",
+              intro: "IP de fantasia com series, filme e animacao.",
+            },
+          },
           enabled: true,
           regions: "巴西, 墨西哥",
           defaultContent: "魔法学院 第3季",
@@ -1428,6 +1549,17 @@
           logo: "侦",
           logoTone: "dark",
           type: "影视IP",
+          intro: "围绕暗夜侦探角色展开的悬疑影视IP，包含电影版和剧集内容。",
+          i18n: {
+            "zh-CN": {
+              name: "暗夜侦探",
+              intro: "围绕暗夜侦探角色展开的悬疑影视IP，包含电影版和剧集内容。",
+            },
+            en: {
+              name: "Night Detective",
+              intro: "A mystery screen IP centered on a night detective character.",
+            },
+          },
           enabled: false,
           regions: "全部地区",
           defaultContent: "暗夜侦探 电影版",
@@ -1469,11 +1601,57 @@
         { key: "short", label: "短剧" },
       ];
 
+      const localeList = [
+        { key: "zh-CN", label: "简体中文", required: true, namePlaceholder: "如：银河旅人", introPlaceholder: "用于默认展示和兜底展示" },
+        { key: "en", label: "英语", namePlaceholder: "e.g. Galaxy Travelers", introPlaceholder: "English IP description" },
+        { key: "es-419", label: "拉美西语", namePlaceholder: "p. ej. Viajeros Galacticos", introPlaceholder: "Descripcion para LATAM" },
+        { key: "pt-BR", label: "巴西葡语", namePlaceholder: "ex.: Viajantes Galacticos", introPlaceholder: "Descricao para Brasil" },
+        { key: "tr", label: "土耳其语", namePlaceholder: "Orn. Galaksi Gezginleri", introPlaceholder: "Turkce IP aciklamasi" },
+        { key: "ar", label: "阿拉伯语", namePlaceholder: "مثال: رحالة المجرة", introPlaceholder: "وصف IP باللغة العربية" },
+        { key: "fil", label: "菲律宾语", namePlaceholder: "hal. Galaxy Travelers", introPlaceholder: "Paglalarawan sa Filipino" },
+      ];
+
+      function createI18n(baseName, baseIntro, overrides = {}) {
+        return localeList.reduce((acc, locale) => {
+          const current = overrides[locale.key] || {};
+          acc[locale.key] = {
+            name: current.name || (locale.key === "zh-CN" ? baseName : ""),
+            intro: current.intro || (locale.key === "zh-CN" ? baseIntro : ""),
+          };
+          return acc;
+        }, {});
+      }
+
+      function normalizeIpI18n(ip) {
+        ip.i18n = createI18n(ip.name, ip.intro || "", ip.i18n || {});
+        ip.name = ip.i18n["zh-CN"].name || ip.name;
+        ip.intro = ip.i18n["zh-CN"].intro || ip.intro || "";
+        return ip.i18n;
+      }
+
+      function localizedIpName(ip, localeKey = "zh-CN") {
+        const i18n = normalizeIpI18n(ip);
+        return i18n[localeKey]?.name || i18n["zh-CN"]?.name || ip.name;
+      }
+
+      function localizedIpIntro(ip, localeKey = "zh-CN") {
+        const i18n = normalizeIpI18n(ip);
+        return i18n[localeKey]?.intro || i18n["zh-CN"]?.intro || "未填写";
+      }
+
+      function i18nFilledCount(i18n) {
+        return localeList.filter((locale) => {
+          const item = i18n[locale.key] || {};
+          return item.name || item.intro;
+        }).length;
+      }
+
       let ipList = JSON.parse(JSON.stringify(initialIpList));
       let selectedIpId = ipList[0].id;
       let activeTab = "all";
       let createEnabled = true;
       let createDefaultContentId = "";
+      let createLocaleDraft = {};
       let createTermDrafts = [];
       let createContentDrafts = [];
       let termEnabled = true;
@@ -1484,7 +1662,9 @@
         ipList: document.getElementById("ipList"),
         ipSearch: document.getElementById("ipSearch"),
         basicName: document.getElementById("basicName"),
+        basicIntro: document.getElementById("basicIntro"),
         basicType: document.getElementById("basicType"),
+        localeCoverage: document.getElementById("localeCoverage"),
         moduleSwitch: document.getElementById("moduleSwitch"),
         moduleStatusText: document.getElementById("moduleStatusText"),
         defaultContent: document.getElementById("defaultContent"),
@@ -1505,9 +1685,8 @@
         cancelCreateBtn: document.getElementById("cancelCreateBtn"),
         previewCreateBtn: document.getElementById("previewCreateBtn"),
         saveCreateBtn: document.getElementById("saveCreateBtn"),
-        createIpName: document.getElementById("createIpName"),
         createIpType: document.getElementById("createIpType"),
-        createIntro: document.getElementById("createIntro"),
+        createLocaleEditor: document.getElementById("createLocaleEditor"),
         createEnableSwitch: document.getElementById("createEnableSwitch"),
         createEnableText: document.getElementById("createEnableText"),
         createRegion: document.getElementById("createRegion"),
@@ -1619,7 +1798,9 @@
       function renderIpList() {
         const query = els.ipSearch.value.trim().toLowerCase();
         const filtered = ipList.filter((ip) => {
-          const text = `${ip.name} ${ip.id}`.toLowerCase();
+          const i18n = normalizeIpI18n(ip);
+          const localeNames = localeList.map((locale) => i18n[locale.key]?.name || "").join(" ");
+          const text = `${ip.name} ${localeNames} ${ip.id}`.toLowerCase();
           return text.includes(query);
         });
 
@@ -1651,13 +1832,22 @@
       }
 
       function renderBasic(ip) {
-        els.basicName.textContent = ip.name;
+        const i18n = normalizeIpI18n(ip);
+        els.basicName.textContent = localizedIpName(ip);
+        els.basicIntro.textContent = localizedIpIntro(ip);
         els.basicType.textContent = ip.type;
         els.defaultContent.textContent = ip.defaultContent;
         els.updateInfo.textContent = `${ip.updatedBy} / ${ip.updatedAt}`;
         els.regionSelect.value = ip.regions;
         els.moduleSwitch.classList.toggle("on", ip.enabled);
         els.moduleStatusText.innerHTML = statusChip(ip.enabled);
+        els.localeCoverage.innerHTML = localeList
+          .map((locale) => {
+            const item = i18n[locale.key] || {};
+            const filled = Boolean(item.name || item.intro);
+            return `<span class="locale-chip ${filled ? "filled" : ""}" title="${locale.key}">${locale.label}${filled ? " 已填" : " 未填"}</span>`;
+          })
+          .join("");
       }
 
       function renderTerms(ip) {
@@ -1802,11 +1992,65 @@
         renderPreview(ip);
       }
 
+      function renderCreateLocaleEditor() {
+        els.createLocaleEditor.innerHTML = `
+          <div class="locale-editor-head">
+            <div>语言</div>
+            <div>IP名称</div>
+            <div>IP简介</div>
+          </div>
+          ${localeList
+            .map((locale) => {
+              const item = createLocaleDraft[locale.key] || { name: "", intro: "" };
+              return `
+                <div class="locale-row" data-locale="${locale.key}">
+                  <div class="locale-name">
+                    <strong>${locale.label}${locale.required ? " *" : ""}</strong>
+                    <span>${locale.key}${locale.required ? " · 默认回退语言" : ""}</span>
+                  </div>
+                  <input class="form-input" dir="auto" data-field="name" value="${item.name}" placeholder="${locale.namePlaceholder}" />
+                  <textarea class="form-textarea" dir="auto" data-field="intro" placeholder="${locale.introPlaceholder}">${item.intro}</textarea>
+                </div>
+              `;
+            })
+            .join("")}
+        `;
+
+        els.createLocaleEditor.querySelectorAll("input, textarea").forEach((input) => {
+          input.addEventListener("input", renderCreatePreview);
+          input.addEventListener("change", renderCreatePreview);
+        });
+      }
+
+      function collectCreateLocaleDraft() {
+        createLocaleDraft = localeList.reduce((acc, locale) => {
+          const row = els.createLocaleEditor.querySelector(`[data-locale="${locale.key}"]`);
+          acc[locale.key] = {
+            name: row?.querySelector("[data-field='name']")?.value.trim() || "",
+            intro: row?.querySelector("[data-field='intro']")?.value.trim() || "",
+          };
+          return acc;
+        }, {});
+        return createLocaleDraft;
+      }
+
       function resetCreateDraft() {
         createEnabled = true;
-        els.createIpName.value = "银河旅人";
         els.createIpType.value = "影视IP";
-        els.createIntro.value = "银河旅人是一组围绕同名科幻影视IP聚合的电影、电视剧和动画内容。";
+        createLocaleDraft = createI18n("银河旅人", "银河旅人是一组围绕同名科幻影视IP聚合的电影、电视剧和动画内容。", {
+          en: {
+            name: "Galaxy Travelers",
+            intro: "A sci-fi screen IP that aggregates movies, series and animated titles.",
+          },
+          "es-419": {
+            name: "Viajeros Galacticos",
+            intro: "IP de ciencia ficcion con peliculas, series y animacion.",
+          },
+          "pt-BR": {
+            name: "Viajantes Galacticos",
+            intro: "IP de ficcao cientifica com filmes, series e animacoes.",
+          },
+        });
         els.createRegion.value = "全部地区";
         els.createDefaultContentSearch.value = "";
         createDefaultContentId = "C50001";
@@ -1838,6 +2082,7 @@
             visible: true,
           },
         ];
+        renderCreateLocaleEditor();
         renderCreateTermRows();
         renderCreateContentRows();
         renderCreateDefaultOptions();
@@ -1972,10 +2217,13 @@
       }
 
       function renderCreatePreview() {
+        const i18n = collectCreateLocaleDraft();
         collectCreateTermDrafts();
         collectCreateContentDrafts();
         renderCreateDefaultOptions();
-        const ipName = els.createIpName.value.trim() || "未填写IP名称";
+        const ipName = i18n["zh-CN"].name || "未填写IP名称";
+        const introText = i18n["zh-CN"].intro || "未填写IP简介";
+        const localeCount = i18nFilledCount(i18n);
         const activeTerms = createTermDrafts.filter((term) => term.word);
         const visibleContents = createContentDrafts.filter((item) => item.name && item.visible);
         const termText = activeTerms.length
@@ -1992,7 +2240,7 @@
           </div>
           <div class="preview-card">
             <h4>映射IP</h4>
-            <p>${ipName}<br />模块状态：${createEnabled ? "启用" : "关闭"}<br />地区：${els.createRegion.value}<br />默认首推：${defaultText}</p>
+            <p>${ipName}<br />简介：${introText}<br />已填语言：${localeCount}/${localeList.length}<br />模块状态：${createEnabled ? "启用" : "关闭"}<br />地区：${els.createRegion.value}<br />默认首推：${defaultText}</p>
           </div>
           <div class="preview-card">
             <h4>IP模块内容</h4>
@@ -2002,12 +2250,13 @@
       }
 
       function saveCreateDraft() {
+        const i18n = collectCreateLocaleDraft();
         collectCreateTermDrafts();
         collectCreateContentDrafts();
         renderCreateDefaultOptions();
-        const name = els.createIpName.value.trim();
+        const name = i18n["zh-CN"].name.trim();
         if (!name) {
-          alert("请填写IP名称");
+          alert("请填写简体中文IP名称");
           return;
         }
         const validTerms = createTermDrafts.filter((term) => term.word);
@@ -2023,6 +2272,8 @@
         const newIp = {
           id: nextIpId(),
           name,
+          intro: i18n["zh-CN"].intro,
+          i18n,
           logo: name.slice(0, 1),
           logoTone: "blue",
           type: els.createIpType.value,
@@ -2242,7 +2493,7 @@
         renderCreateDefaultOptions();
       });
 
-      [els.createIpName, els.createIpType, els.createRegion].forEach((input) => {
+      [els.createIpType, els.createRegion].forEach((input) => {
         input.addEventListener("input", renderCreatePreview);
         input.addEventListener("change", renderCreatePreview);
       });
