@@ -357,6 +357,44 @@
         min-height: 66px;
       }
 
+      .cover-preview {
+        width: 88px;
+        aspect-ratio: 2 / 3;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        color: #fff;
+        font-weight: 800;
+        font-size: 22px;
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0)),
+          linear-gradient(150deg, #175cd3 0%, #344054 100%);
+        background-size: cover;
+        background-position: center;
+      }
+
+      .cover-preview.has-image span {
+        display: none;
+      }
+
+      .cover-uploader {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 14px;
+        align-items: start;
+      }
+
+      .cover-actions {
+        display: grid;
+        gap: 10px;
+      }
+
+      .cover-actions .form-input {
+        padding-top: 7px;
+      }
+
       .hint {
         margin-top: 7px;
         color: var(--muted);
@@ -931,6 +969,13 @@
             <div class="basic-grid">
               <div class="field-grid">
                 <div class="field">
+                  <div class="label">IP封面:</div>
+                  <div>
+                    <div class="cover-preview" id="basicCover"><span id="basicCoverFallback"></span></div>
+                    <div class="hint">竖版封面，建议比例 2:3；用于搜索结果页 IP 信息区。</div>
+                  </div>
+                </div>
+                <div class="field">
                   <div class="label">IP名称:</div>
                   <div class="value" id="basicName"></div>
                 </div>
@@ -1079,6 +1124,21 @@
                 <input class="form-input" id="createIpId" value="系统自动生成" disabled />
                 <span class="hint">保存后由后台生成，示例中自动补一个临时ID。</span>
               </label>
+
+              <div class="form-item full">
+                <span class="form-label">IP封面 <span class="required">*</span></span>
+                <div class="cover-uploader">
+                  <div class="cover-preview" id="createCoverPreview"><span>封面</span></div>
+                  <div class="cover-actions">
+                    <input class="form-input" id="createCoverInput" type="file" accept="image/*" />
+                    <div class="inline-controls">
+                      <button class="ghost-btn" type="button" id="removeCreateCoverBtn">清除封面</button>
+                      <span class="chip blue">竖版 2:3</span>
+                    </div>
+                    <span class="hint">用于搜索结果页 IP 信息区主图。建议上传竖版海报，推荐比例 2:3，格式 JPG / PNG / WebP。</span>
+                  </div>
+                </div>
+              </div>
 
               <div class="form-item full">
                 <span class="form-label">IP名称 / IP简介 多语言 <span class="required">*</span></span>
@@ -1381,6 +1441,7 @@
           logo: "星",
           logoTone: "blue",
           type: "影视IP",
+          coverUrl: "",
           intro: "围绕星际英雄团队展开的科幻影视IP，聚合电影、电视剧、动漫与短剧内容。",
           i18n: {
             "zh-CN": {
@@ -1478,6 +1539,7 @@
           logo: "魔",
           logoTone: "purple",
           type: "影视IP",
+          coverUrl: "",
           intro: "围绕魔法学院师生展开的奇幻影视IP，包含多季剧集、电影和动画内容。",
           i18n: {
             "zh-CN": {
@@ -1549,6 +1611,7 @@
           logo: "侦",
           logoTone: "dark",
           type: "影视IP",
+          coverUrl: "",
           intro: "围绕暗夜侦探角色展开的悬疑影视IP，包含电影版和剧集内容。",
           i18n: {
             "zh-CN": {
@@ -1651,6 +1714,7 @@
       let activeTab = "all";
       let createEnabled = true;
       let createDefaultContentId = "";
+      let createCoverUrl = "";
       let createLocaleDraft = {};
       let createTermDrafts = [];
       let createContentDrafts = [];
@@ -1661,6 +1725,8 @@
       const els = {
         ipList: document.getElementById("ipList"),
         ipSearch: document.getElementById("ipSearch"),
+        basicCover: document.getElementById("basicCover"),
+        basicCoverFallback: document.getElementById("basicCoverFallback"),
         basicName: document.getElementById("basicName"),
         basicIntro: document.getElementById("basicIntro"),
         basicType: document.getElementById("basicType"),
@@ -1686,6 +1752,9 @@
         previewCreateBtn: document.getElementById("previewCreateBtn"),
         saveCreateBtn: document.getElementById("saveCreateBtn"),
         createIpType: document.getElementById("createIpType"),
+        createCoverInput: document.getElementById("createCoverInput"),
+        createCoverPreview: document.getElementById("createCoverPreview"),
+        removeCreateCoverBtn: document.getElementById("removeCreateCoverBtn"),
         createLocaleEditor: document.getElementById("createLocaleEditor"),
         createEnableSwitch: document.getElementById("createEnableSwitch"),
         createEnableText: document.getElementById("createEnableText"),
@@ -1752,6 +1821,13 @@
 
       function setSwitchState(button, enabled) {
         button.classList.toggle("on", enabled);
+      }
+
+      function setCoverPreview(element, fallbackText, coverUrl) {
+        element.classList.toggle("has-image", Boolean(coverUrl));
+        element.style.backgroundImage = coverUrl ? `url("${coverUrl}")` : "";
+        const fallback = element.querySelector("span");
+        if (fallback) fallback.textContent = fallbackText || "封面";
       }
 
       function openDrawer(drawer) {
@@ -1833,6 +1909,7 @@
 
       function renderBasic(ip) {
         const i18n = normalizeIpI18n(ip);
+        setCoverPreview(els.basicCover, ip.logo || localizedIpName(ip).slice(0, 1), ip.coverUrl || "");
         els.basicName.textContent = localizedIpName(ip);
         els.basicIntro.textContent = localizedIpIntro(ip);
         els.basicType.textContent = ip.type;
@@ -2036,7 +2113,10 @@
 
       function resetCreateDraft() {
         createEnabled = true;
+        createCoverUrl = "";
         els.createIpType.value = "影视IP";
+        els.createCoverInput.value = "";
+        setCoverPreview(els.createCoverPreview, "封面", createCoverUrl);
         createLocaleDraft = createI18n("银河旅人", "银河旅人是一组围绕同名科幻影视IP聚合的电影、电视剧和动画内容。", {
           en: {
             name: "Galaxy Travelers",
@@ -2240,7 +2320,7 @@
           </div>
           <div class="preview-card">
             <h4>映射IP</h4>
-            <p>${ipName}<br />简介：${introText}<br />已填语言：${localeCount}/${localeList.length}<br />模块状态：${createEnabled ? "启用" : "关闭"}<br />地区：${els.createRegion.value}<br />默认首推：${defaultText}</p>
+            <p>${ipName}<br />简介：${introText}<br />IP封面：${createCoverUrl ? "已上传竖版封面" : "未上传"}<br />已填语言：${localeCount}/${localeList.length}<br />模块状态：${createEnabled ? "启用" : "关闭"}<br />地区：${els.createRegion.value}<br />默认首推：${defaultText}</p>
           </div>
           <div class="preview-card">
             <h4>IP模块内容</h4>
@@ -2259,6 +2339,10 @@
           alert("请填写简体中文IP名称");
           return;
         }
+        if (!createCoverUrl) {
+          alert("请上传IP竖版封面");
+          return;
+        }
         const validTerms = createTermDrafts.filter((term) => term.word);
         if (!validTerms.length) {
           alert("请至少配置一个搜索词");
@@ -2272,6 +2356,7 @@
         const newIp = {
           id: nextIpId(),
           name,
+          coverUrl: createCoverUrl,
           intro: i18n["zh-CN"].intro,
           i18n,
           logo: name.slice(0, 1),
@@ -2469,6 +2554,30 @@
         setSwitchState(els.createEnableSwitch, createEnabled);
         els.createEnableText.className = `chip ${createEnabled ? "green" : "gray"}`;
         els.createEnableText.textContent = createEnabled ? "启用" : "关闭";
+        renderCreatePreview();
+      });
+
+      els.createCoverInput.addEventListener("change", () => {
+        const file = els.createCoverInput.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+          alert("请上传图片文件");
+          els.createCoverInput.value = "";
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          createCoverUrl = String(reader.result || "");
+          setCoverPreview(els.createCoverPreview, "封面", createCoverUrl);
+          renderCreatePreview();
+        };
+        reader.readAsDataURL(file);
+      });
+
+      els.removeCreateCoverBtn.addEventListener("click", () => {
+        createCoverUrl = "";
+        els.createCoverInput.value = "";
+        setCoverPreview(els.createCoverPreview, "封面", createCoverUrl);
         renderCreatePreview();
       });
 
