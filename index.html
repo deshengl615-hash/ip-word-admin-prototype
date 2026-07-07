@@ -63,6 +63,7 @@
       .actions { display: inline-flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
       .layout { display: grid; grid-template-columns: 308px 1fr; min-height: calc(100vh - 72px); }
       .sidebar { padding: 24px 20px; background: #fbfcff; border-right: 1px solid var(--line); }
+      .sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
       .search-box { margin: 18px 0; }
       .search-box input, .form-input, select, textarea {
         width: 100%;
@@ -221,6 +222,10 @@
       .locale-row, .locale-editor-head { display: grid; grid-template-columns: 132px minmax(180px, .8fr) minmax(260px, 1.2fr); gap: 10px; align-items: start; }
       .locale-editor-head { color: #475467; font-weight: 700; padding: 0 4px; }
       .locale-row { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcff; }
+      .ai-copy-row, .ai-copy-head { display: grid; grid-template-columns: 132px minmax(320px, 1fr) minmax(320px, 1fr); gap: 10px; align-items: start; }
+      .ai-copy-head { color: #475467; font-weight: 700; padding: 0 4px; }
+      .ai-copy-row { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcff; }
+      .preview-box { min-height: 74px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: #344054; line-height: 1.5; }
       .locale-name span { display: block; color: var(--muted); font-size: 12px; }
       .readonly-box { min-height: 38px; display: flex; align-items: center; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; color: #344054; font-weight: 650; }
       .empty { min-height: 82px; display: grid; place-items: center; color: #98a2b3; border: 1px dashed var(--line-strong); border-radius: 6px; background: #fafbfc; }
@@ -238,7 +243,10 @@
 
       <section class="layout">
         <aside class="sidebar">
-          <h2>IP列表</h2>
+          <div class="sidebar-head">
+            <h2>IP列表</h2>
+            <button class="btn secondary" type="button" id="aiCopyBtn">AI推荐文案</button>
+          </div>
           <div class="search-box"><input id="ipSearch" type="search" placeholder="搜索IP名称/ID" /></div>
           <div class="ip-list" id="ipList"></div>
         </aside>
@@ -444,6 +452,42 @@
       </div>
     </section>
 
+    <section class="drawer-mask" id="aiCopyDrawer" aria-hidden="true">
+      <div class="drawer" role="dialog" aria-modal="true">
+        <header class="drawer-header">
+          <div class="drawer-title">
+            <h2>AI推荐文案</h2>
+            <p>配置搜索结果页 IP 信息区下方的 AI 推荐提示；{IP名称} 会按触发 IPID 替换为对应多语言标题。</p>
+          </div>
+          <button class="btn" type="button" data-close="aiCopyDrawer">关闭</button>
+        </header>
+        <div class="drawer-body">
+          <section class="form-section">
+            <div class="form-section-head">
+              <div><h3>多语言推荐文案</h3><p>当前预览会使用左侧选中的 IP。实际线上展示时，以触发搜索词命中的 IPID 为准。</p></div>
+              <span class="chip blue">全局模板</span>
+            </div>
+            <div class="form-grid">
+              <div class="form-item full">
+                <span class="form-label">当前预览IP</span>
+                <div class="readonly-box" id="aiPreviewIp"></div>
+              </div>
+              <div class="form-item full">
+                <span class="form-label">文案模板 <span class="required">*</span></span>
+                <div class="locale-editor" id="aiCopyEditor"></div>
+                <div class="hint">必须保留 {IP名称} 占位符；客户端展示时读取当前 IP 的多语言标题进行替换。</div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <footer class="drawer-footer">
+          <button class="btn" type="button" id="resetAiCopyBtn">恢复默认文案</button>
+          <button class="btn" type="button" data-close="aiCopyDrawer">取消</button>
+          <button class="btn primary" type="button" id="saveAiCopyBtn">保存文案</button>
+        </footer>
+      </div>
+    </section>
+
     <section class="drawer-mask" id="termDrawer" aria-hidden="true">
       <div class="drawer narrow" role="dialog" aria-modal="true">
         <header class="drawer-header">
@@ -512,6 +556,15 @@
         ["anime", "动漫"],
         ["short", "短剧"],
       ];
+      const defaultAiCopyTemplates = {
+        "zh-CN": "根据 AI 推荐，已为你聚合“{IP名称}”相关影视内容，下面展示该 IP 下的具体作品。",
+        en: 'Based on AI recommendations, we have gathered screen content related to "{IP名称}". Below are the specific works under this IP.',
+        "es-419": 'Segun la recomendacion de IA, reunimos contenido audiovisual relacionado con "{IP名称}". Abajo se muestran las obras especificas de esta IP.',
+        "pt-BR": 'Com base na recomendacao da IA, reunimos conteudos audiovisuais relacionados a "{IP名称}". Abaixo estao as obras especificas deste IP.',
+        tr: 'AI onerisine gore "{IP名称}" ile ilgili gorsel icerikler bir araya getirildi. Asagida bu IP kapsamindaki eserler gosterilir.',
+        ar: 'بناء على توصية الذكاء الاصطناعي، جمعنا محتوى مرئيا مرتبطا بـ "{IP名称}". وتظهر أدناه الأعمال التابعة لهذا العنوان.',
+        fil: 'Batay sa rekomendasyon ng AI, pinagsama namin ang mga video content na may kaugnayan sa "{IP名称}". Nasa ibaba ang mga gawa sa ilalim ng IP na ito.',
+      };
       const initialIps = [
         {
           id: "IP10001", name: "星际侠", logo: "星", tone: "", type: "影视IP", enabled: true, regions: "全部地区", defaultContent: "星际侠 第2季", updatedBy: "运营A", updatedAt: "2026-07-05", coverUrl: "",
@@ -551,20 +604,24 @@
       let createEnabled = true, termEnabled = true, contentVisible = true, contentAsDefault = false;
       let createCoverUrl = "", editCoverUrl = "";
       let createLocaleDraft = {}, editLocaleDraft = {};
+      let aiCopyTemplates = JSON.parse(JSON.stringify(defaultAiCopyTemplates));
+      let aiCopyDraft = {};
       let editingTermIndex = null;
       let editingContentId = null;
 
       const $ = (id) => document.getElementById(id);
       const els = {
         ipList: $("ipList"), ipSearch: $("ipSearch"), basicCover: $("basicCover"), basicName: $("basicName"), basicIntro: $("basicIntro"), basicType: $("basicType"), moduleSwitch: $("moduleSwitch"), moduleStatusText: $("moduleStatusText"), defaultContent: $("defaultContent"), regionSelect: $("regionSelect"), updateInfo: $("updateInfo"), localeCoverage: $("localeCoverage"), termRows: $("termRows"), contentTabs: $("contentTabs"), contentRows: $("contentRows"),
-        createDrawer: $("createDrawer"), editInfoDrawer: $("editInfoDrawer"), termDrawer: $("termDrawer"), contentDrawer: $("contentDrawer"),
+        createDrawer: $("createDrawer"), editInfoDrawer: $("editInfoDrawer"), aiCopyDrawer: $("aiCopyDrawer"), termDrawer: $("termDrawer"), contentDrawer: $("contentDrawer"),
         createIpType: $("createIpType"), createCoverInput: $("createCoverInput"), createCoverPreview: $("createCoverPreview"), createLocaleEditor: $("createLocaleEditor"), createEnableSwitch: $("createEnableSwitch"), createEnableText: $("createEnableText"), createRegion: $("createRegion"),
         editInfoIpId: $("editInfoIpId"), editInfoIpType: $("editInfoIpType"), editCoverInput: $("editCoverInput"), editCoverPreview: $("editCoverPreview"), editLocaleEditor: $("editLocaleEditor"),
+        aiPreviewIp: $("aiPreviewIp"), aiCopyEditor: $("aiCopyEditor"),
         termDrawerTitle: $("termDrawerTitle"), termIpReadonly: $("termIpReadonly"), termKeyword: $("termKeyword"), termEnableSwitch: $("termEnableSwitch"), termEnableText: $("termEnableText"),
         contentDrawerTitle: $("contentDrawerTitle"), contentIpReadonly: $("contentIpReadonly"), bindContentId: $("bindContentId"), bindContentName: $("bindContentName"), bindContentType: $("bindContentType"), bindContentTab: $("bindContentTab"), bindContentSeason: $("bindContentSeason"), contentFetchHint: $("contentFetchHint"), contentVisibleSwitch: $("contentVisibleSwitch"), contentVisibleText: $("contentVisibleText"), contentDefaultSwitch: $("contentDefaultSwitch"), contentDefaultText: $("contentDefaultText"),
       };
 
       function currentIp() { return ipList.find((ip) => ip.id === selectedId) || ipList[0]; }
+      function escapeHtml(str = "") { return String(str).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])); }
       function statusChip(on) { return `<span class="chip ${on ? "green" : ""}">${on ? "启用" : "关闭"}</span>`; }
       function tabLabel(key) { return (tabs.find(([k]) => k === key) || [key, key])[1]; }
       function typeToTab(type) { return { "电影": "movie", "电视剧": "tv", "动漫": "anime", "短剧": "short" }[type] || "tv"; }
@@ -597,6 +654,36 @@
         return Object.fromEntries(locales.map(([key]) => {
           const row = container.querySelector(`[data-locale="${key}"]`);
           return [key, { name: row.querySelector("[data-field='name']").value.trim(), intro: row.querySelector("[data-field='intro']").value.trim() }];
+        }));
+      }
+      function localeTitle(ip, key) {
+        const i18n = normalizeI18n(ip);
+        return i18n[key]?.name || i18n["zh-CN"]?.name || ip.name;
+      }
+      function applyIpPlaceholder(template, ipName) {
+        return (template || "").replaceAll("{IP名称}", ipName).replaceAll("{{IP名称}}", ipName).replaceAll("蜘蛛侠", ipName);
+      }
+      function renderAiCopyPreview() {
+        const ip = currentIp();
+        els.aiPreviewIp.textContent = `${ip.name} / ${ip.id}`;
+        els.aiCopyEditor.querySelectorAll("[data-ai-locale]").forEach((row) => {
+          const key = row.dataset.aiLocale;
+          const template = row.querySelector("[data-field='template']").value;
+          row.querySelector("[data-preview]").textContent = applyIpPlaceholder(template, localeTitle(ip, key));
+        });
+      }
+      function renderAiCopyEditor() {
+        els.aiCopyEditor.innerHTML = `<div class="ai-copy-head"><div>语言</div><div>AI推荐文案模板</div><div>当前IP预览</div></div>` + locales.map(([key, label, required]) => {
+          const template = aiCopyDraft[key] || "";
+          return `<div class="ai-copy-row" data-ai-locale="${key}"><div class="locale-name"><strong>${label}${required ? " *" : ""}</strong><span>${key}</span></div><textarea data-field="template" dir="auto" placeholder="${label}AI推荐文案">${escapeHtml(template)}</textarea><div class="preview-box" data-preview></div></div>`;
+        }).join("");
+        els.aiCopyEditor.querySelectorAll("textarea").forEach((input) => input.addEventListener("input", renderAiCopyPreview));
+        renderAiCopyPreview();
+      }
+      function collectAiCopy() {
+        return Object.fromEntries(locales.map(([key]) => {
+          const row = els.aiCopyEditor.querySelector(`[data-ai-locale="${key}"]`);
+          return [key, row.querySelector("[data-field='template']").value.trim()];
         }));
       }
       function contentCatalog() {
@@ -681,6 +768,10 @@
         els.editInfoIpId.textContent = ip.id; els.editInfoIpType.textContent = ip.type; els.editCoverInput.value = "";
         setCover(els.editCoverPreview, ip.logo, editCoverUrl);
         renderLocaleEditor(els.editLocaleEditor, editLocaleDraft, () => {});
+      }
+      function resetAiCopyForm() {
+        aiCopyDraft = JSON.parse(JSON.stringify(aiCopyTemplates));
+        renderAiCopyEditor();
       }
       function resetTermForm() {
         const ip = currentIp();
@@ -779,6 +870,14 @@
         Object.assign(ip, { name, logo: name.slice(0, 1), coverUrl: editCoverUrl, i18n, updatedBy: "当前运营", updatedAt: todayText() });
         closeDrawer(els.editInfoDrawer); render();
       }
+      function saveAiCopy() {
+        const next = collectAiCopy();
+        if (!next["zh-CN"]) return alert("请填写简体中文AI推荐文案");
+        const missingPlaceholder = Object.entries(next).filter(([, value]) => value && !value.includes("{IP名称}") && !value.includes("{{IP名称}}") && !value.includes("蜘蛛侠"));
+        if (missingPlaceholder.length && !confirm("部分语言未包含 {IP名称} 占位符，线上将无法按IP标题替换。确认仍要保存吗？")) return;
+        aiCopyTemplates = next;
+        closeDrawer(els.aiCopyDrawer);
+      }
       function saveTerm() {
         const ip = currentIp();
         const keyword = els.termKeyword.value.trim();
@@ -821,11 +920,14 @@
       }
 
       $("newIpBtn").addEventListener("click", () => { resetCreateForm(); openDrawer(els.createDrawer); });
+      $("aiCopyBtn").addEventListener("click", () => { resetAiCopyForm(); openDrawer(els.aiCopyDrawer); });
       $("editIpInfoBtn").addEventListener("click", () => { resetEditForm(); openDrawer(els.editInfoDrawer); });
       $("addTermBtn").addEventListener("click", () => { resetTermForm(); openDrawer(els.termDrawer); });
       $("addContentBtn").addEventListener("click", () => { resetContentForm(); openDrawer(els.contentDrawer); });
       $("saveCreateBtn").addEventListener("click", saveCreate);
       $("saveEditInfoBtn").addEventListener("click", saveEditInfo);
+      $("saveAiCopyBtn").addEventListener("click", saveAiCopy);
+      $("resetAiCopyBtn").addEventListener("click", () => { aiCopyDraft = JSON.parse(JSON.stringify(defaultAiCopyTemplates)); renderAiCopyEditor(); });
       $("saveTermBtn").addEventListener("click", saveTerm);
       $("saveContentBtn").addEventListener("click", saveContent);
       $("resetBtn").addEventListener("click", () => { ipList = JSON.parse(JSON.stringify(initialIps)); selectedId = ipList[0].id; activeTab = "all"; render(); });
