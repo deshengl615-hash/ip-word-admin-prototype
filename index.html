@@ -58,9 +58,9 @@
       }
       .btn.primary { color: #fff; background: var(--blue); border-color: var(--blue); box-shadow: 0 6px 14px rgba(26, 115, 232, 0.2); }
       .btn.secondary { color: var(--blue); border-color: #9dc0fb; }
-      .btn.small { height: 30px; padding: 0 10px; font-weight: 700; }
+      .btn.small { height: 30px; min-width: 48px; padding: 0 10px; font-weight: 700; }
       .btn.danger { color: var(--red); border-color: #fecaca; background: #fff; }
-      .actions { display: inline-flex; gap: 8px; align-items: center; }
+      .actions { display: inline-flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
       .layout { display: grid; grid-template-columns: 308px 1fr; min-height: calc(100vh - 72px); }
       .sidebar { padding: 24px 20px; background: #fbfcff; border-right: 1px solid var(--line); }
       .search-box { margin: 18px 0; }
@@ -138,8 +138,10 @@
       .ip-logo.purple { background: #7c3aed; }
       .ip-logo.dark { background: #344054; }
       .ip-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-      .table-wrap { padding: 16px; }
-      table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+      .table-wrap { padding: 16px; overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: visible; }
+      .term-table { min-width: 620px; }
+      .content-table { min-width: 980px; }
       th, td {
         height: 46px;
         padding: 0 12px;
@@ -152,6 +154,17 @@
       }
       th { color: #475467; background: var(--soft); font-weight: 700; }
       tr:last-child td, th:last-child, td:last-child { border-bottom: 0; border-right: 0; }
+      th.action-col, td.action-cell {
+        width: 136px;
+        min-width: 136px;
+        overflow: visible;
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        box-shadow: -1px 0 0 var(--line);
+      }
+      th.action-col { background: var(--soft); }
+      td.action-cell { background: #fff; }
       .chip {
         display: inline-flex;
         align-items: center;
@@ -290,8 +303,14 @@
                 <button class="btn secondary" type="button" id="addTermBtn">+ 添加搜索词</button>
               </div>
               <div class="table-wrap">
-                <table>
-                  <thead><tr><th>搜索词</th><th>映射IP</th><th>状态</th><th>操作</th></tr></thead>
+                <table class="term-table">
+                  <colgroup>
+                    <col />
+                    <col />
+                    <col style="width: 104px" />
+                    <col style="width: 136px" />
+                  </colgroup>
+                  <thead><tr><th>搜索词</th><th>映射IP</th><th>状态</th><th class="action-col">操作</th></tr></thead>
                   <tbody id="termRows"></tbody>
                 </table>
               </div>
@@ -305,8 +324,17 @@
               <div class="table-wrap">
                 <div class="tabs" id="contentTabs"></div>
                 <div style="height:12px"></div>
-                <table>
-                  <thead><tr><th>内容名称</th><th>整合ID</th><th>类型</th><th>展示Tab</th><th>季/年份</th><th>模块展示</th><th>操作</th></tr></thead>
+                <table class="content-table">
+                  <colgroup>
+                    <col style="width: 170px" />
+                    <col style="width: 118px" />
+                    <col style="width: 108px" />
+                    <col style="width: 118px" />
+                    <col style="width: 118px" />
+                    <col style="width: 106px" />
+                    <col style="width: 136px" />
+                  </colgroup>
+                  <thead><tr><th>内容名称</th><th>整合ID</th><th>类型</th><th>展示Tab</th><th>季/年份</th><th>模块展示</th><th class="action-col">操作</th></tr></thead>
                   <tbody id="contentRows"></tbody>
                 </table>
               </div>
@@ -613,7 +641,7 @@
       }
       function renderTerms(ip) {
         els.termRows.innerHTML = ip.terms.length
-          ? ip.terms.map((term, index) => `<tr><td>${term.word}</td><td>${ip.name}</td><td>${statusChip(term.enabled)}</td><td><div class="actions"><button class="btn small secondary" type="button" data-edit-term="${index}">编辑</button><button class="btn small danger" type="button" data-delete-term="${index}">删除</button></div></td></tr>`).join("")
+          ? ip.terms.map((term, index) => `<tr><td>${term.word}</td><td>${ip.name}</td><td>${statusChip(term.enabled)}</td><td class="action-cell"><div class="actions"><button class="btn small secondary" type="button" data-edit-term="${index}">编辑</button><button class="btn small danger" type="button" data-delete-term="${index}">删除</button></div></td></tr>`).join("")
           : `<tr><td colspan="4"><div class="empty">当前IP暂无搜索词</div></td></tr>`;
         els.termRows.querySelectorAll("[data-edit-term]").forEach((btn) => btn.addEventListener("click", () => editTerm(Number(btn.dataset.editTerm))));
         els.termRows.querySelectorAll("[data-delete-term]").forEach((btn) => btn.addEventListener("click", () => deleteTerm(Number(btn.dataset.deleteTerm))));
@@ -629,7 +657,7 @@
       function renderContents(ip) {
         const rows = rowsForTab(ip);
         els.contentRows.innerHTML = rows.length
-          ? rows.map((item) => `<tr><td>${item.name}</td><td>${item.id}</td><td>${item.type}</td><td>${tabLabel(item.tab)}</td><td>${item.season || "-"}</td><td>${item.visible ? '<span class="chip green">开</span>' : '<span class="chip red">关</span>'}</td><td><div class="actions"><button class="btn small secondary" type="button" data-edit-content="${item.id}">编辑</button><button class="btn small danger" type="button" data-delete-content="${item.id}">删除</button></div></td></tr>`).join("")
+          ? rows.map((item) => `<tr><td>${item.name}</td><td>${item.id}</td><td>${item.type}</td><td>${tabLabel(item.tab)}</td><td>${item.season || "-"}</td><td>${item.visible ? '<span class="chip green">开</span>' : '<span class="chip red">关</span>'}</td><td class="action-cell"><div class="actions"><button class="btn small secondary" type="button" data-edit-content="${item.id}">编辑</button><button class="btn small danger" type="button" data-delete-content="${item.id}">删除</button></div></td></tr>`).join("")
           : `<tr><td colspan="7"><div class="empty">当前分类暂无绑定内容</div></td></tr>`;
         els.contentRows.querySelectorAll("[data-edit-content]").forEach((btn) => btn.addEventListener("click", () => editContent(btn.dataset.editContent)));
         els.contentRows.querySelectorAll("[data-delete-content]").forEach((btn) => btn.addEventListener("click", () => deleteContent(btn.dataset.deleteContent)));
