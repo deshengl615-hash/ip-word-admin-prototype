@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>搜索结果页 IP 模块设计稿</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --line: #e6e9ef;
+      --line-strong: #d5dae3;
+      --text: #1f2328;
+      --muted: #687385;
+      --soft: #f1f4f8;
+      --blue: #1f6feb;
+      --blue-soft: #eaf2ff;
+      --red: #cf2e2e;
+      --green: #0f8a63;
+      --shadow: 0 12px 30px rgba(31, 35, 40, 0.08);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 26px 20px 44px;
+    }
+
+    .canvas {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .phone {
+      width: 390px;
+      min-height: 812px;
+      background: #fff;
+      border: 1px solid #d9dee7;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .status {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      font-size: 12px;
+      color: #111827;
+    }
+
+    .browser-top {
+      padding: 10px 14px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .searchbar {
+      height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(31, 35, 40, 0.04);
+    }
+
+    .search-icon {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #7a8494;
+      border-radius: 50%;
+      position: relative;
+      flex: none;
+    }
+
+    .search-icon::after {
+      content: "";
+      position: absolute;
+      width: 7px;
+      height: 2px;
+      right: -6px;
+      bottom: -3px;
+      background: #7a8494;
+      transform: rotate(45deg);
+      border-radius: 2px;
+    }
+
+    .content {
+      padding: 14px 12px 26px;
+      background: #fbfcfe;
+    }
+
+    .result-title {
+      margin: 0 0 10px 4px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .ip-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .ip-hero {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .poster-main {
+      width: 96px;
+      height: 126px;
+      border-radius: 12px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)),
+        radial-gradient(circle at 68% 22%, rgba(255, 255, 255, 0.52), transparent 18%),
+        linear-gradient(145deg, #c91f3a 0%, #172a77 58%, #07111f 100%);
+      position: relative;
+      overflow: hidden;
+      flex: none;
+    }
+
+    .poster-main::before,
+    .poster-main::after,
+    .poster::before,
+    .poster::after {
+      content: "";
+      position: absolute;
+      inset: 17px 15px auto;
+      height: 48px;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      border-left: 0;
+      border-bottom: 0;
+      transform: skew(-18deg) rotate(15deg);
+      border-radius: 0 24px 0 0;
+    }
+
+    .poster-main::after,
+    .poster::after {
+      inset: auto 16px 18px;
+      height: 48px;
+      transform: skew(18deg) rotate(-16deg);
+      opacity: 0.65;
+    }
+
+    .ip-info {
+      min-width: 0;
+    }
+
+    .ip-title {
+      margin: 2px 0 8px;
+      font-size: 23px;
+      line-height: 1.15;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .ip-desc {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #3d4656;
+    }
+
+    .ai-note {
+      margin: 0 14px 14px;
+      padding: 10px 11px;
+      border-radius: 12px;
+      background: #f7faff;
+      border: 1px solid #dbe8ff;
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .ai-mark {
+      width: 30px;
+      height: 22px;
+      border-radius: 7px;
+      background: #111827;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 760;
+      display: grid;
+      place-items: center;
+    }
+
+    .ai-copy {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #4b5870;
+    }
+
+    .section {
+      border-top: 1px solid var(--line);
+      padding: 14px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 750;
+    }
+
+    .section-more {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar,
+    .rail::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      border: 0;
+      height: 30px;
+      padding: 0 15px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: #3d4656;
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .tab[aria-pressed="true"] {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .rail-wrap {
+      position: relative;
+    }
+
+    .rail {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 0 36px 2px 0;
+      scroll-snap-type: x proximity;
+      scrollbar-width: none;
+    }
+
+    .work {
+      width: 96px;
+      flex: 0 0 96px;
+      scroll-snap-align: start;
+    }
+
+    .poster {
+      width: 96px;
+      height: 126px;
+      border-radius: 11px;
+      background: linear-gradient(145deg, #c51f3d, #193786 54%, #08101d);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      box-shadow: 0 6px 14px rgba(31, 35, 40, 0.12);
+    }
+
+    .poster.alt1 {
+      background: linear-gradient(145deg, #b71f39, #324b9d 48%, #152235);
+    }
+
+    .poster.alt2 {
+      background: linear-gradient(145deg, #751a32, #244c82 54%, #091522);
+    }
+
+    .poster.alt3 {
+      background: linear-gradient(145deg, #e35a42, #69349d 46%, #101322);
+    }
+
+    .poster.alt4 {
+      background: linear-gradient(145deg, #293748, #167a9f 50%, #061018);
+    }
+
+    .work-name {
+      margin: 7px 0 3px;
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 680;
+      min-height: 34px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .work-meta {
+      margin: 0;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .next {
+      position: absolute;
+      right: -5px;
+      top: 43px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.96);
+      color: #4e5a6c;
+      display: grid;
+      place-items: center;
+      font-size: 25px;
+      box-shadow: 0 8px 20px rgba(31, 35, 40, 0.14);
+    }
+
+    .below-result {
+      margin-top: 12px;
+      padding: 13px 14px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .below-result h3 {
+      margin: 0 0 5px;
+      font-size: 15px;
+    }
+
+    .below-result p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .spec {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .spec h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    .spec .lead {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .note-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .note-panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 14px 16px;
+      background: #fff;
+    }
+
+    .note-panel h2 {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+
+    .note-blank {
+      min-height: 230px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background:
+        linear-gradient(#fff, #fff) padding-box,
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent 31px,
+          #eef1f6 32px
+        );
+      outline: none;
+      padding: 10px 12px;
+      color: #1f2328;
+      font-size: 14px;
+      line-height: 32px;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 920px) {
+      .page {
+        padding: 16px 12px 30px;
+      }
+
+      .canvas {
+        grid-template-columns: 1fr;
+      }
+
+      .phone {
+        width: min(390px, 100%);
+        margin: 0 auto;
+      }
+
+      .spec {
+        width: min(620px, 100%);
+        margin: 0 auto;
+      }
+
+      .note-blank {
+        min-height: 180px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="canvas">
+      <section class="phone" aria-label="搜索结果页 IP 模块设计稿">
+        <div class="status">
+          <span>9:41</span>
+          <span>5G 100%</span>
+        </div>
+
+        <div class="browser-top">
+          <div class="searchbar">
+            <span class="search-icon" aria-hidden="true"></span>
+            <span>spiderman</span>
+          </div>
+        </div>
+
+        <div class="content">
+          <p class="result-title">搜索结果</p>
+
+          <article class="ip-card">
+            <div class="ip-hero">
+              <div class="poster-main" aria-hidden="true"></div>
+              <div class="ip-info">
+                <h1 class="ip-title">蜘蛛侠</h1>
+                <p class="ip-desc">围绕蜘蛛侠角色与系列标题，聚合相关影视内容信息。</p>
+              </div>
+            </div>
+
+            <div class="ai-note">
+              <span class="ai-mark">AI</span>
+              <p class="ai-copy">根据 AI 推荐，已为你聚合“蜘蛛侠”相关影视内容，下面展示该 IP 下的具体作品。</p>
+            </div>
+
+            <section class="section">
+              <div class="section-head">
+                <h2 class="section-title">蜘蛛侠相关作品</h2>
+                <span class="section-more">共 12 部</span>
+              </div>
+
+              <div class="tabs" role="tablist" aria-label="内容分类">
+                <button class="tab" type="button" aria-pressed="true" data-filter="all">全部</button>
+                <button class="tab" type="button" aria-pressed="false" data-filter="movie">电影</button>
+                <button class="tab" type="button" aria-pressed="false" data-filter="series">电视剧</button>
+                <button class="tab" type="button" aria-pressed="false" data-filter="anime">动漫</button>
+              </div>
+
+              <div class="rail-wrap">
+                <div class="rail" id="workRail" aria-live="polite"></div>
+                <div class="next" aria-hidden="true">›</div>
+              </div>
+            </section>
+          </article>
+
+          <section class="below-result">
+            <h3>其他搜索结果</h3>
+            <p>IP 模块下方继续展示普通召回内容，按搜索相关性和业务排序返回。</p>
+          </section>
+        </div>
+      </section>
+
+      <aside class="spec">
+        <h1>PRD 填写区</h1>
+        <p class="lead">右侧留白用于补充模块取值规则和注意事项。</p>
+
+        <div class="note-stack">
+          <div class="note-panel">
+            <h2>模块如何取值</h2>
+            <div class="note-blank" contenteditable="true" aria-label="模块如何取值"></div>
+          </div>
+
+          <div class="note-panel">
+            <h2>注意事项</h2>
+            <div class="note-blank" contenteditable="true" aria-label="注意事项"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const works = [
+      { title: "蜘蛛侠", year: "2002", typeLabel: "电影", type: "movie", poster: "alt1" },
+      { title: "蜘蛛侠 2", year: "2004", typeLabel: "电影", type: "movie", poster: "alt2" },
+      { title: "蜘蛛侠 3", year: "2007", typeLabel: "电影", type: "movie", poster: "alt3" },
+      { title: "超凡蜘蛛侠", year: "2012", typeLabel: "电影", type: "movie", poster: "alt4" },
+      { title: "蜘蛛侠动画版", seasonLabel: "第一季", year: "1994", typeLabel: "动漫", type: "anime", poster: "alt2" },
+      { title: "终极蜘蛛侠", seasonLabel: "第二季", year: "2012", typeLabel: "动漫", type: "anime", poster: "alt3" },
+      { title: "蜘蛛侠特别篇", seasonLabel: "第一季", year: "2018", typeLabel: "电视剧", type: "series", poster: "alt1" },
+      { title: "蜘蛛侠新冒险", seasonLabel: "第一季", year: "2003", typeLabel: "电视剧", type: "series", poster: "alt4" }
+    ];
+
+    const rail = document.querySelector("#workRail");
+    const tabs = Array.from(document.querySelectorAll(".tab"));
+
+    function formatMeta(item) {
+      return [item.seasonLabel, item.year, item.typeLabel].filter(Boolean).join(" · ");
+    }
+
+    function render(filter = "all") {
+      const items = filter === "all" ? works : works.filter((item) => item.type === filter);
+      rail.innerHTML = items.map((item) => `
+        <div class="work">
+          <div class="poster ${item.poster}" aria-hidden="true"></div>
+          <h3 class="work-name">${item.title}</h3>
+          <p class="work-meta">${formatMeta(item)}</p>
+        </div>
+      `).join("");
+      rail.scrollLeft = 0;
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((item) => item.setAttribute("aria-pressed", "false"));
+        tab.setAttribute("aria-pressed", "true");
+        render(tab.dataset.filter);
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
