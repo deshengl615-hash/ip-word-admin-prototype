@@ -58,6 +58,9 @@
       }
       .btn.primary { color: #fff; background: var(--blue); border-color: var(--blue); box-shadow: 0 6px 14px rgba(26, 115, 232, 0.2); }
       .btn.secondary { color: var(--blue); border-color: #9dc0fb; }
+      .btn.small { height: 30px; padding: 0 10px; font-weight: 700; }
+      .btn.danger { color: var(--red); border-color: #fecaca; background: #fff; }
+      .actions { display: inline-flex; gap: 8px; align-items: center; }
       .layout { display: grid; grid-template-columns: 308px 1fr; min-height: calc(100vh - 72px); }
       .sidebar { padding: 24px 20px; background: #fbfcff; border-right: 1px solid var(--line); }
       .search-box { margin: 18px 0; }
@@ -288,7 +291,7 @@
               </div>
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>搜索词</th><th>映射IP</th><th>状态</th></tr></thead>
+                  <thead><tr><th>搜索词</th><th>映射IP</th><th>状态</th><th>操作</th></tr></thead>
                   <tbody id="termRows"></tbody>
                 </table>
               </div>
@@ -303,7 +306,7 @@
                 <div class="tabs" id="contentTabs"></div>
                 <div style="height:12px"></div>
                 <table>
-                  <thead><tr><th>内容名称</th><th>整合ID</th><th>类型</th><th>展示Tab</th><th>季/年份</th><th>模块展示</th></tr></thead>
+                  <thead><tr><th>内容名称</th><th>整合ID</th><th>类型</th><th>展示Tab</th><th>季/年份</th><th>模块展示</th><th>操作</th></tr></thead>
                   <tbody id="contentRows"></tbody>
                 </table>
               </div>
@@ -416,7 +419,7 @@
     <section class="drawer-mask" id="termDrawer" aria-hidden="true">
       <div class="drawer narrow" role="dialog" aria-modal="true">
         <header class="drawer-header">
-          <div class="drawer-title"><h2>添加搜索词</h2><p>添加搜索词时，校验是否已经存在。当前IP已添加则直接提示；如在其他IP添加过，提示“该词已在IPID：xxx存在”。</p></div>
+          <div class="drawer-title"><h2 id="termDrawerTitle">添加搜索词</h2><p>添加搜索词时，校验是否已经存在。当前IP已添加则直接提示；如在其他IP添加过，提示“该词已在IPID：xxx存在”。</p></div>
           <button class="btn" type="button" data-close="termDrawer">关闭</button>
         </header>
         <div class="drawer-body">
@@ -439,7 +442,7 @@
     <section class="drawer-mask" id="contentDrawer" aria-hidden="true">
       <div class="drawer narrow" role="dialog" aria-modal="true">
         <header class="drawer-header">
-          <div class="drawer-title"><h2>绑定内容</h2><p>通过整合ID绑定内容；内容名称、内容类型、季/年份由内容库自动获取。</p></div>
+          <div class="drawer-title"><h2 id="contentDrawerTitle">绑定内容</h2><p>通过整合ID绑定内容；内容名称、内容类型、季/年份由内容库自动获取。</p></div>
           <button class="btn" type="button" data-close="contentDrawer">关闭</button>
         </header>
         <div class="drawer-body">
@@ -520,6 +523,8 @@
       let createEnabled = true, termEnabled = true, contentVisible = true, contentAsDefault = false;
       let createCoverUrl = "", editCoverUrl = "";
       let createLocaleDraft = {}, editLocaleDraft = {};
+      let editingTermIndex = null;
+      let editingContentId = null;
 
       const $ = (id) => document.getElementById(id);
       const els = {
@@ -527,8 +532,8 @@
         createDrawer: $("createDrawer"), editInfoDrawer: $("editInfoDrawer"), termDrawer: $("termDrawer"), contentDrawer: $("contentDrawer"),
         createIpType: $("createIpType"), createCoverInput: $("createCoverInput"), createCoverPreview: $("createCoverPreview"), createLocaleEditor: $("createLocaleEditor"), createEnableSwitch: $("createEnableSwitch"), createEnableText: $("createEnableText"), createRegion: $("createRegion"),
         editInfoIpId: $("editInfoIpId"), editInfoIpType: $("editInfoIpType"), editCoverInput: $("editCoverInput"), editCoverPreview: $("editCoverPreview"), editLocaleEditor: $("editLocaleEditor"),
-        termIpReadonly: $("termIpReadonly"), termKeyword: $("termKeyword"), termEnableSwitch: $("termEnableSwitch"), termEnableText: $("termEnableText"),
-        contentIpReadonly: $("contentIpReadonly"), bindContentId: $("bindContentId"), bindContentName: $("bindContentName"), bindContentType: $("bindContentType"), bindContentTab: $("bindContentTab"), bindContentSeason: $("bindContentSeason"), contentFetchHint: $("contentFetchHint"), contentVisibleSwitch: $("contentVisibleSwitch"), contentVisibleText: $("contentVisibleText"), contentDefaultSwitch: $("contentDefaultSwitch"), contentDefaultText: $("contentDefaultText"),
+        termDrawerTitle: $("termDrawerTitle"), termIpReadonly: $("termIpReadonly"), termKeyword: $("termKeyword"), termEnableSwitch: $("termEnableSwitch"), termEnableText: $("termEnableText"),
+        contentDrawerTitle: $("contentDrawerTitle"), contentIpReadonly: $("contentIpReadonly"), bindContentId: $("bindContentId"), bindContentName: $("bindContentName"), bindContentType: $("bindContentType"), bindContentTab: $("bindContentTab"), bindContentSeason: $("bindContentSeason"), contentFetchHint: $("contentFetchHint"), contentVisibleSwitch: $("contentVisibleSwitch"), contentVisibleText: $("contentVisibleText"), contentDefaultSwitch: $("contentDefaultSwitch"), contentDefaultText: $("contentDefaultText"),
       };
 
       function currentIp() { return ipList.find((ip) => ip.id === selectedId) || ipList[0]; }
@@ -607,7 +612,11 @@
         els.localeCoverage.innerHTML = locales.map(([key, label]) => `<span class="locale-chip ${i18n[key]?.name || i18n[key]?.intro ? "filled" : ""}">${label}${i18n[key]?.name || i18n[key]?.intro ? " 已填" : " 未填"}</span>`).join("");
       }
       function renderTerms(ip) {
-        els.termRows.innerHTML = ip.terms.length ? ip.terms.map((term) => `<tr><td>${term.word}</td><td>${ip.name}</td><td>${statusChip(term.enabled)}</td></tr>`).join("") : `<tr><td colspan="3"><div class="empty">当前IP暂无搜索词</div></td></tr>`;
+        els.termRows.innerHTML = ip.terms.length
+          ? ip.terms.map((term, index) => `<tr><td>${term.word}</td><td>${ip.name}</td><td>${statusChip(term.enabled)}</td><td><div class="actions"><button class="btn small secondary" type="button" data-edit-term="${index}">编辑</button><button class="btn small danger" type="button" data-delete-term="${index}">删除</button></div></td></tr>`).join("")
+          : `<tr><td colspan="4"><div class="empty">当前IP暂无搜索词</div></td></tr>`;
+        els.termRows.querySelectorAll("[data-edit-term]").forEach((btn) => btn.addEventListener("click", () => editTerm(Number(btn.dataset.editTerm))));
+        els.termRows.querySelectorAll("[data-delete-term]").forEach((btn) => btn.addEventListener("click", () => deleteTerm(Number(btn.dataset.deleteTerm))));
       }
       function rowsForTab(ip) { return activeTab === "all" ? ip.contents : ip.contents.filter((item) => item.tab === activeTab); }
       function renderTabs(ip) {
@@ -619,7 +628,11 @@
       }
       function renderContents(ip) {
         const rows = rowsForTab(ip);
-        els.contentRows.innerHTML = rows.length ? rows.map((item) => `<tr><td>${item.name}</td><td>${item.id}</td><td>${item.type}</td><td>${tabLabel(item.tab)}</td><td>${item.season || "-"}</td><td>${item.visible ? '<span class="chip green">开</span>' : '<span class="chip red">关</span>'}</td></tr>`).join("") : `<tr><td colspan="6"><div class="empty">当前分类暂无绑定内容</div></td></tr>`;
+        els.contentRows.innerHTML = rows.length
+          ? rows.map((item) => `<tr><td>${item.name}</td><td>${item.id}</td><td>${item.type}</td><td>${tabLabel(item.tab)}</td><td>${item.season || "-"}</td><td>${item.visible ? '<span class="chip green">开</span>' : '<span class="chip red">关</span>'}</td><td><div class="actions"><button class="btn small secondary" type="button" data-edit-content="${item.id}">编辑</button><button class="btn small danger" type="button" data-delete-content="${item.id}">删除</button></div></td></tr>`).join("")
+          : `<tr><td colspan="7"><div class="empty">当前分类暂无绑定内容</div></td></tr>`;
+        els.contentRows.querySelectorAll("[data-edit-content]").forEach((btn) => btn.addEventListener("click", () => editContent(btn.dataset.editContent)));
+        els.contentRows.querySelectorAll("[data-delete-content]").forEach((btn) => btn.addEventListener("click", () => deleteContent(btn.dataset.deleteContent)));
       }
       function render() {
         const ip = currentIp();
@@ -643,15 +656,83 @@
       }
       function resetTermForm() {
         const ip = currentIp();
+        editingTermIndex = null;
         termEnabled = true; els.termIpReadonly.textContent = `${ip.name} / ${ip.id}`; els.termKeyword.value = "";
+        els.termDrawerTitle.textContent = "添加搜索词";
         setSwitch(els.termEnableSwitch, true); els.termEnableText.className = "chip green"; els.termEnableText.textContent = "启用";
       }
       function resetContentForm() {
         const ip = currentIp();
+        editingContentId = null;
         contentVisible = true; contentAsDefault = false; els.contentIpReadonly.textContent = `${ip.name} / ${ip.id}`;
+        els.contentDrawerTitle.textContent = "绑定内容";
         els.bindContentId.value = ""; applyContentMeta();
         setSwitch(els.contentVisibleSwitch, true); els.contentVisibleText.className = "chip green"; els.contentVisibleText.textContent = "开";
         setSwitch(els.contentDefaultSwitch, false); els.contentDefaultText.className = "chip"; els.contentDefaultText.textContent = "否";
+      }
+
+      function editTerm(index) {
+        const ip = currentIp();
+        const term = ip.terms[index];
+        if (!term) return;
+        editingTermIndex = index;
+        termEnabled = term.enabled;
+        els.termDrawerTitle.textContent = "编辑搜索词";
+        els.termIpReadonly.textContent = `${ip.name} / ${ip.id}`;
+        els.termKeyword.value = term.word;
+        setSwitch(els.termEnableSwitch, termEnabled);
+        els.termEnableText.className = `chip ${termEnabled ? "green" : ""}`;
+        els.termEnableText.textContent = termEnabled ? "启用" : "关闭";
+        openDrawer(els.termDrawer);
+      }
+
+      function deleteTerm(index) {
+        const ip = currentIp();
+        const term = ip.terms[index];
+        if (!term) return;
+        if (!confirm(`确认删除搜索词“${term.word}”吗？`)) return;
+        ip.terms.splice(index, 1);
+        ip.updatedBy = "当前运营";
+        ip.updatedAt = todayText();
+        render();
+      }
+
+      function editContent(id) {
+        const ip = currentIp();
+        const item = ip.contents.find((content) => content.id === id);
+        if (!item) return;
+        editingContentId = id;
+        contentVisible = item.visible;
+        contentAsDefault = item.order === "默认首推" || ip.defaultContent === item.name;
+        els.contentDrawerTitle.textContent = "编辑绑定内容";
+        els.contentIpReadonly.textContent = `${ip.name} / ${ip.id}`;
+        els.bindContentId.value = item.id;
+        applyContentMeta();
+        els.bindContentName.value = item.name;
+        els.bindContentType.value = item.type;
+        els.bindContentTab.value = item.tab;
+        els.bindContentSeason.value = item.season || "";
+        setSwitch(els.contentVisibleSwitch, contentVisible);
+        els.contentVisibleText.className = `chip ${contentVisible ? "green" : "red"}`;
+        els.contentVisibleText.textContent = contentVisible ? "开" : "关";
+        setSwitch(els.contentDefaultSwitch, contentAsDefault);
+        els.contentDefaultText.className = `chip ${contentAsDefault ? "green" : ""}`;
+        els.contentDefaultText.textContent = contentAsDefault ? "是" : "否";
+        openDrawer(els.contentDrawer);
+      }
+
+      function deleteContent(id) {
+        const ip = currentIp();
+        const index = ip.contents.findIndex((content) => content.id === id);
+        if (index < 0) return;
+        const item = ip.contents[index];
+        if (!confirm(`确认删除绑定内容“${item.name}”吗？`)) return;
+        ip.contents.splice(index, 1);
+        if (ip.defaultContent === item.name) ip.defaultContent = "未配置";
+        ip.updatedBy = "当前运营";
+        ip.updatedAt = todayText();
+        activeTab = "all";
+        render();
       }
 
       function saveCreate() {
@@ -674,10 +755,14 @@
         const ip = currentIp();
         const keyword = els.termKeyword.value.trim();
         if (!keyword) return alert("请填写搜索词");
-        if (ip.terms.some((term) => term.word === keyword)) return alert("当前IP已添加");
+        if (ip.terms.some((term, index) => term.word === keyword && index !== editingTermIndex)) return alert("当前IP已添加");
         const duplicated = ipList.find((item) => item.id !== ip.id && item.terms.some((term) => term.word === keyword));
         if (duplicated) return alert(`该词已在IPID：${duplicated.id}存在`);
-        ip.terms.push({ word: keyword, enabled: termEnabled });
+        if (editingTermIndex === null) {
+          ip.terms.push({ word: keyword, enabled: termEnabled });
+        } else {
+          ip.terms[editingTermIndex] = { word: keyword, enabled: termEnabled };
+        }
         ip.updatedBy = "当前运营"; ip.updatedAt = todayText();
         closeDrawer(els.termDrawer); render();
       }
@@ -687,13 +772,22 @@
         const meta = id ? findContent(id) : null;
         if (!id) return alert("请填写整合ID");
         if (!meta) return alert("未获取到该整合ID对应的内容信息");
-        if (ip.contents.some((item) => item.id === id)) return alert("当前IP下已绑定相同整合ID");
+        if (ip.contents.some((item) => item.id === id && item.id !== editingContentId)) return alert("当前IP下已绑定相同整合ID");
+        const editingIndex = editingContentId === null ? -1 : ip.contents.findIndex((item) => item.id === editingContentId);
+        const previous = editingIndex >= 0 ? ip.contents[editingIndex] : null;
         if (contentAsDefault) {
           ip.defaultContent = meta.name;
           ip.contents = ip.contents.map((item, index) => ({ ...item, order: item.order === "默认首推" ? String(index + 1) : item.order }));
+        } else if (previous && ip.defaultContent === previous.name) {
+          ip.defaultContent = "未配置";
         }
         const content = { ...meta, tab: els.bindContentTab.value, visible: contentVisible, order: contentAsDefault ? "默认首推" : String(ip.contents.length + 1) };
-        ip.contents.push(content);
+        if (editingIndex >= 0) {
+          content.order = contentAsDefault ? "默认首推" : previous.order === "默认首推" ? String(editingIndex + 1) : previous.order;
+          ip.contents[editingIndex] = content;
+        } else {
+          ip.contents.push(content);
+        }
         ip.updatedBy = "当前运营"; ip.updatedAt = todayText(); activeTab = content.tab;
         closeDrawer(els.contentDrawer); render();
       }
