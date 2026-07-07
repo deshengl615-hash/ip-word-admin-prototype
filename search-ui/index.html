@@ -431,6 +431,38 @@
       white-space: pre-wrap;
     }
 
+    .note-filled {
+      min-height: 510px;
+      background: #fbfcfe;
+      line-height: 1.65;
+      white-space: normal;
+      overflow: auto;
+    }
+
+    .note-filled h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .note-filled h3:not(:first-child) {
+      margin-top: 18px;
+    }
+
+    .note-filled ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .note-filled li {
+      margin: 0 0 8px;
+      color: #3d4656;
+    }
+
+    .note-filled strong {
+      color: #1f2328;
+    }
+
     @media (max-width: 920px) {
       .page {
         padding: 16px 12px 30px;
@@ -523,7 +555,24 @@
         <div class="note-stack">
           <div class="note-panel">
             <h2>模块如何取值</h2>
-            <div class="note-blank" contenteditable="true" aria-label="模块如何取值"></div>
+            <div class="note-blank note-filled" contenteditable="true" aria-label="模块如何取值">
+              <h3>IP 基础信息和 AI 推荐模块</h3>
+              <ol>
+                <li><strong>左侧封面：</strong>取值后台 IP 模块基础信息里上传的封面。</li>
+                <li><strong>IP 标题：</strong>取值后台 IP 模块基础信息里的多语言标题，例如“蜘蛛侠”。</li>
+                <li><strong>IP 简介：</strong>取值后台 IP 模块基础信息里的多语言简介，例如“围绕蜘蛛侠角色与系列标题，聚合相关影视内容信息”。</li>
+                <li><strong>AI 推荐文案：</strong>后台 IP 列表增加“IP AI 推荐文案”字段。文案中变化的 IP 名称取值第 2 点的多语言标题，例如“蜘蛛侠”。</li>
+              </ol>
+
+              <h3>蜘蛛侠相关作品模块</h3>
+              <ol start="5">
+                <li><strong>总数：</strong>“共 12 部”的数字取值“全部”内容总数，切换 Tab 时不改变该数字。</li>
+                <li><strong>分类 Tab：</strong>“全部”“电影”“电视剧”“动漫”根据后台配置展示；某个 Tab 下没有绑定内容时，不展示该 Tab。</li>
+                <li><strong>内容封面：</strong>取值添加的整合 ID 的竖版封面。目前整合封面暂不支持多语言；下版本会支持多语言整合封面，本期需提前做好兼容。</li>
+                <li><strong>内容名称：</strong>取值添加整合 ID 的多语言名称。</li>
+                <li><strong>名称下方标签：</strong>从左到右展示“季简称 · 开播年份 · 类型”。季简称取值整合 ID 的第几季信息，并使用简称，例如中文“第一季”、英文“S1”、西语/葡语“T1”；开播年份取值整合 ID 的开播年份；类型取值该整合 ID 被放入的分类 Tab。若内容无季信息，则不展示季简称。</li>
+              </ol>
+            </div>
           </div>
 
           <div class="note-panel">
