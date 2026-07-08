@@ -475,13 +475,12 @@
               <div class="form-item full">
                 <span class="form-label">文案模板 <span class="required">*</span></span>
                 <div class="locale-editor" id="aiCopyEditor"></div>
-                <div class="hint">必须保留 {IP名称} 占位符；客户端展示时读取当前 IP 的多语言标题进行替换。</div>
+                <div class="hint">简体中文、英语必填；必须保留 {IP名称} 占位符，客户端展示时读取当前 IP 的多语言标题进行替换。</div>
               </div>
             </div>
           </section>
         </div>
         <footer class="drawer-footer">
-          <button class="btn" type="button" id="resetAiCopyBtn">恢复默认文案</button>
           <button class="btn" type="button" data-close="aiCopyDrawer">取消</button>
           <button class="btn primary" type="button" id="saveAiCopyBtn">保存文案</button>
         </footer>
@@ -675,7 +674,8 @@
       function renderAiCopyEditor() {
         els.aiCopyEditor.innerHTML = `<div class="ai-copy-head"><div>语言</div><div>AI推荐文案模板</div><div>当前IP预览</div></div>` + locales.map(([key, label, required]) => {
           const template = aiCopyDraft[key] || "";
-          return `<div class="ai-copy-row" data-ai-locale="${key}"><div class="locale-name"><strong>${label}${required ? " *" : ""}</strong><span>${key}</span></div><textarea data-field="template" dir="auto" placeholder="${label}AI推荐文案">${escapeHtml(template)}</textarea><div class="preview-box" data-preview></div></div>`;
+          const copyRequired = required || key === "en";
+          return `<div class="ai-copy-row" data-ai-locale="${key}"><div class="locale-name"><strong>${label}${copyRequired ? " *" : ""}</strong><span>${key}</span></div><textarea data-field="template" dir="auto" placeholder="${label}AI推荐文案">${escapeHtml(template)}</textarea><div class="preview-box" data-preview></div></div>`;
         }).join("");
         els.aiCopyEditor.querySelectorAll("textarea").forEach((input) => input.addEventListener("input", renderAiCopyPreview));
         renderAiCopyPreview();
@@ -872,7 +872,7 @@
       }
       function saveAiCopy() {
         const next = collectAiCopy();
-        if (!next["zh-CN"]) return alert("请填写简体中文AI推荐文案");
+        if (!next["zh-CN"] || !next.en) return alert("请填写简体中文和英语AI推荐文案");
         const missingPlaceholder = Object.entries(next).filter(([, value]) => value && !value.includes("{IP名称}") && !value.includes("{{IP名称}}") && !value.includes("蜘蛛侠"));
         if (missingPlaceholder.length && !confirm("部分语言未包含 {IP名称} 占位符，线上将无法按IP标题替换。确认仍要保存吗？")) return;
         aiCopyTemplates = next;
@@ -927,7 +927,6 @@
       $("saveCreateBtn").addEventListener("click", saveCreate);
       $("saveEditInfoBtn").addEventListener("click", saveEditInfo);
       $("saveAiCopyBtn").addEventListener("click", saveAiCopy);
-      $("resetAiCopyBtn").addEventListener("click", () => { aiCopyDraft = JSON.parse(JSON.stringify(defaultAiCopyTemplates)); renderAiCopyEditor(); });
       $("saveTermBtn").addEventListener("click", saveTerm);
       $("saveContentBtn").addEventListener("click", saveContent);
       $("resetBtn").addEventListener("click", () => { ipList = JSON.parse(JSON.stringify(initialIps)); selectedId = ipList[0].id; activeTab = "all"; render(); });
